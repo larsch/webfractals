@@ -159,11 +159,7 @@ function iter(cx, cy) {
   return n;
 }
 
-function renderRow(y) {
-  // map y coordinate to non-linear order
-  y = (Math.floor(y / sl) * 11) % ss + (y % sl) * ss;
-
-  let cy = ymin + yscale * y;
+function renderRowData(cy, xmin, xscale, w, data) {
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
     let n = iter(cx, cy);
@@ -178,6 +174,13 @@ function renderRow(y) {
     }
     data[p + 3] = 255;
   }
+}
+
+function renderRow(y) {
+  // map y coordinate to non-linear order
+  y = (Math.floor(y / sl) * 11) % ss + (y % sl) * ss;
+  let cy = ymin + yscale * y;
+  renderRowData(cy, xmin, xscale, w, data);
   ct.putImageData(img, 0, y);
 }
 
