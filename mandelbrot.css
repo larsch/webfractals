@@ -1,4 +1,21 @@
 body {
     font-family: Calibri, sans-serif;
     font-size: 10pt;
+    margin: 0px;
+}
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+canvas#scaled {
+    z-index: 0;
+}
+
+canvas#canvas {
+    z-index: 1;
+}
+canvas#progress {
+    z-index: 2;
 }
