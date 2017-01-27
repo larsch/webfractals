@@ -1,4 +1,3 @@
-'use strict';
 let canvas = document.getElementById("canvas");
 let bgCanvas = document.getElementById("scaled");
 let ctx = canvas.getContext("2d");
@@ -34,6 +33,12 @@ function resetZoom() {
   let cx = (xmax + xmin) / 2;
   let cy = (ymax + ymin) / 2;
   let area = Math.abs((xmax - xmin) * (ymax - ymin));
+  setZoom(cx, cy, area);
+  saveState();
+  invalidate();
+}
+
+function setZoom(cx, cy, area) {
   let aspect = w / h;
   xsize = Math.sqrt(area * aspect);
   ysize = xsize / aspect;
@@ -44,8 +49,6 @@ function resetZoom() {
   xscale = xsize / w;
   yscale = ysize / h;
   steps = getAutoSteps();
-  saveState();
-  invalidate();
 }
 
 function loadState() {
@@ -62,16 +65,7 @@ function loadState() {
     if (key == 'a') area = parseFloat(value);
   }
   if (cx !== null && cy !== null && area !== null) {
-    let newAspect = w / h;
-    xsize = Math.sqrt(area * newAspect);
-    ysize = xsize / newAspect;
-    xmin = cx - xsize / 2;
-    xmax = cx + xsize / 2;
-    ymin = cy - ysize / 2;
-    ymax = cy + ysize / 2;
-    xscale = xsize / w;
-    yscale = ysize / h;
-    steps = getAutoSteps();
+    setZoom(cx, cy, area);
   }
 }
 loadState();
@@ -182,6 +176,13 @@ for (let i = 0; i < 256; i++) {
 
 let renderStartTime = null;
 
+function drawProgressTime(time) {
+  progressCtx.fillStyle = 'white';
+  progressCtx.textAlign = 'center';
+  progressCtx.textBaseline = 'middle';
+  progressCtx.fillText(Date.now() - renderStartTime, 20, 20);
+}
+
 function drawProgress() {
   let progress = ((yGoal + h2 - y) % h2) / h2;
   progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
@@ -190,18 +191,12 @@ function drawProgress() {
   progressCtx.moveTo(20,20);
   progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
   progressCtx.fill();
-  progressCtx.fillStyle = 'white';
-  progressCtx.textAlign = 'center';
-  progressCtx.textBaseline = 'middle';
-  progressCtx.fillText(Date.now() - renderStartTime, 20, 20);
+  drawProgressTime(Date.now() - renderStartTime);
 }
 
 function clearProgress() {
   progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
-  progressCtx.fillStyle = 'white';
-  progressCtx.textAlign = 'center';
-  progressCtx.textBaseline = 'middle';
-  progressCtx.fillText(Date.now() - renderStartTime, 20, 20);
+  drawProgressTime(Date.now() - renderStartTime);
 }
 
 function anim(t) {
@@ -237,28 +232,26 @@ function invalidate() {
   renderStartTime = Date.now();
 }
 
+function getMousePosition(ev) {
+  var rect = canvas.getBoundingClientRect();
+  var mx = ev.clientX - rect.left;
+  var my = ev.clientY - rect.top;
+  return [mx, my];
+}
+
 canvas.addEventListener('contextmenu', function(e){
   e.preventDefault();
-  var rect = canvas.getBoundingClientRect();
-  var mx = e.clientX - rect.left;
-  var my = e.clientY - rect.top;
-  zoom(mx, my, -0.2);
+  zoom(getMousePosition(e), -0.2);
 });
 
 canvas.addEventListener('click', function(e){
   e.preventDefault();
-  var rect = canvas.getBoundingClientRect();
-  var mx = e.clientX - rect.left;
-  var my = e.clientY - rect.top;
-  zoom(mx, my, 0.2);
+  zoom(getMousePosition(e), 0.2);
 });
 
 canvas.addEventListener('wheel', function(e){
-  var rect = canvas.getBoundingClientRect();
-  var mx = e.clientX - rect.left;
-  var my = e.clientY - rect.top;
   if (e.deltaY)
-    zoom(mx, my, -0.2 * Math.sign(e.deltaY));
+    zoom(getMousePosition(e), -0.2 * Math.sign(e.deltaY));
 });
 
 function getAutoSteps() {
@@ -269,7 +262,9 @@ function getAutoSteps() {
   return Math.floor(223.0/f);
 }
 
-function zoom(mx, my, zoom) {
+function zoom(pos, zoom) {
+  let mx = pos[0];
+  let my = pos[1];
   // scale viewing area
   xmin = xmin + zoom * mx * xscale;
   xmax = xmax - zoom * (w - mx) * xscale;
@@ -302,7 +297,7 @@ function zoom(mx, my, zoom) {
   saveState();
 
   return false;
-};
+}
 
 function iter(cx, cy) {
   let zy = cy;
