@@ -198,8 +198,6 @@ function anim(t) {
 function startRender() {
   y = 0;
   yGoal = 0;
-  xsize = (xmax - xmin);
-  ysize = (ymax - ymin);
   requestAnimationFrame(anim);
 }
 
