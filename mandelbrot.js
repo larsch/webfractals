@@ -48,6 +48,7 @@ function loadState() {
     ymax = cy + ysize / 2;
     xscale = xsize / w;
     yscale = ysize / h;
+    steps = getAutoSteps();
   }
 }
 loadState();
@@ -92,6 +93,7 @@ function resize() {
   ysize = ysize1;
   xscale = xscale1;
   yscale = yscale1;
+  steps = getAutoSteps();
   saveState();
 
   // apply current overload to background
@@ -202,11 +204,6 @@ function startRender() {
 }
 
 function invalidate() {
-  var f = Math.sqrt(
-    0.001+2.0 * Math.min(
-      Math.abs(xsize),
-      Math.abs(ysize)));
-  steps = Math.floor(223.0/f);
   if (y == yGoal)
     startRender();
   else
@@ -229,6 +226,14 @@ canvas.addEventListener('click', function(e){
   var my = e.clientY - rect.top;
   zoom(mx, my, 0.2);
 });
+
+function getAutoSteps() {
+  var f = Math.sqrt(
+    0.001+2.0 * Math.min(
+      Math.abs(xsize),
+      Math.abs(ysize)));
+  return Math.floor(223.0/f);
+}
 
 function zoom(mx, my, zoom) {
   // scale viewing area
