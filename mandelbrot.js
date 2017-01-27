@@ -343,3 +343,23 @@ window.addEventListener("resize", function(e) {
 
 // Set initialize and kick off rendering
 resize();
+
+window.addEventListener('keypress', function(e){
+  if (e.key == 'f') {
+    if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
+      if (document.exitFullscreen)
+        document.exitFullscreen();
+      if (document.mozCancelFullScreen)
+        document.mozCancelFullScreen();
+      else if (document.webkitCancelFullScreen)
+        document.webkitCancelFullScreen();
+    } else {
+      if (document.body.requestFullscreen)
+        document.body.requestFullscreen();
+      else if (document.body.webkitRequestFullScreen)
+        document.body.webkitRequestFullScreen();
+      else if (document.body.mozRequestFullScreen)
+        document.body.mozRequestFullScreen();
+    }
+  }
+});
