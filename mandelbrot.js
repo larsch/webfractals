@@ -24,6 +24,36 @@ let ysize = ymax - ymin;
 let xscale;
 let yscale;
 
+function loadState() {
+  let hash = location.hash.substr(1);
+  let parts = hash.split(';');
+  let cx = null, cy = null, area = null;
+  for (let i in parts) {
+    let part = parts[i];
+    let kv = part.split('=');
+    let key = kv[0];
+    let value = kv[1];
+    if (key == 'x') cx = parseFloat(value);
+    if (key == 'y') cy = parseFloat(value);
+    if (key == 'a') area = parseFloat(value);
+  }
+  console.log(cx, cy, area);
+  if (cx !== null && cy !== null && area !== null) {
+    let newAspect = w / h;
+    xsize = Math.sqrt(area * newAspect);
+    ysize = xsize / newAspect;
+    xmin = cx - xsize / 2;
+    xmax = cx + xsize / 2;
+    ymin = cy - ysize / 2;
+    ymax = cy + ysize / 2;
+    xscale = xsize / w;
+    yscale = ysize / h;
+    console.log('loaded state', xmin, xmax, ymin, ymax, xsize, ysize);
+  }
+}
+loadState();
+
+
 let rowImage;
 let rowData;
 
@@ -63,6 +93,7 @@ function resize() {
   ysize = ysize1;
   xscale = xscale1;
   yscale = yscale1;
+  saveState();
 
   // apply current overload to background
   bgCtx.drawImage(canvas, 0, 0);
@@ -123,6 +154,18 @@ function drawProgress() {
   progressCtx.moveTo(20,20);
   progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
   progressCtx.fill();
+  progressCtx.fillStyle = 'white';
+  progressCtx.textAlign = 'center';
+  progressCtx.textBaseline = 'middle';
+  progressCtx.fillText(Date.now() - renderStartTime, 20, 20);
+}
+
+function clearProgress() {
+  progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
+  progressCtx.fillStyle = 'white';
+  progressCtx.textAlign = 'center';
+  progressCtx.textBaseline = 'middle';
+  progressCtx.fillText(Date.now() - renderStartTime, 20, 20);
 }
 
 function anim(t) {
@@ -137,7 +180,7 @@ function anim(t) {
     drawProgress();
     requestAnimationFrame(anim);
   } else {
-    progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
+    clearProgress();
   }
   document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
 }
@@ -158,17 +201,28 @@ function invalidate() {
     yGoal = y;
 }
 
-canvas.onclick = function(e) {
-  // get cursor position
+canvas.addEventListener('contextmenu', function(e){
+  e.preventDefault();
   var rect = canvas.getBoundingClientRect();
   var mx = e.clientX - rect.left;
   var my = e.clientY - rect.top;
+  zoom(mx, my, -0.2);
+});
 
+canvas.addEventListener('click', function(e){
+  e.preventDefault();
+  var rect = canvas.getBoundingClientRect();
+  var mx = e.clientX - rect.left;
+  var my = e.clientY - rect.top;
+  zoom(mx, my, 0.2);
+});
+
+function zoom(mx, my, zoom) {
   // scale viewing area
-  xmin = xmin + 0.2 * mx * xscale;
-  xmax = xmax - 0.2 * (w - mx) * xscale;
-  ymin = ymin + 0.2 * my * yscale;
-  ymax = ymax - 0.2 * (h - my) * yscale;
+  xmin = xmin + zoom * mx * xscale;
+  xmax = xmax - zoom * (w - mx) * xscale;
+  ymin = ymin + zoom * my * yscale;
+  ymax = ymax - zoom * (h - my) * yscale;
 
   // find transform (translate and scale)
   const xsize1 = xmax - xmin;
@@ -192,6 +246,9 @@ canvas.onclick = function(e) {
   ysize = ysize1;
   xscale = xsize / w;
   yscale = ysize / h;
+  saveState();
+
+  return false;
 };
 
 function iter(cx, cy) {
@@ -221,6 +278,13 @@ function renderRowData(cy, xmin, xscale, w, rowData) {
     }
     rowData[p + 3] = 255;
   }
+}
+
+function saveState() {
+  let cx = (xmin + xmax) / 2;
+  let cy = (ymin + ymax) / 2;
+  let sz = xsize * ysize;
+  location.hash = 'x=' + cx + ';y=' + cy + ';a=' + sz;
 }
 
 function rowMapping(y) {
