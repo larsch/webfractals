@@ -1,37 +1,98 @@
 'use strict';
-let ca = document.getElementById("canvas");
-let cas = document.getElementById("scaled");
-cas.width = ca.width = window.innerWidth - 20;
-cas.height = ca.height = window.innerHeight - 20;
+let canvas = document.getElementById("canvas");
+let bgCanvas = document.getElementById("scaled");
+let ctx = canvas.getContext("2d");
+let bgCtx = bgCanvas.getContext("2d");
+let progressCanvas = document.getElementById("progress");
+let progressCtx = progressCanvas.getContext("2d");
+progressCanvas.width = 40;
+progressCanvas.height = 40;
+progressCanvas.style.top = "20px";
+progressCanvas.style.left = "20px";
 
-let ct = ca.getContext("2d");
-let cts = cas.getContext("2d");
-let w = ca.width;
-let h = ca.height;
-
-let pca = document.getElementById("progress");
-pca.width = 40;
-pca.height = 40;
-pca.style.top = "20px";
-pca.style.left = "20px";
-let pct = pca.getContext("2d");
-
-let ss = 16;
-let sl = Math.floor((h + ss - 1) / ss);
-let h2 = sl * ss;
-let xmin = -2.5;
+// viewport
+let sliceCount;
+let xmin = -2.25;
 let xmax = 1.5;
 let ymin = 1.5;
 let ymax = -1.5;
+let w = 200 * (xmax - xmin);
+let h = 200 * (ymax - ymin);
+let h2;
 let xsize = xmax - xmin;
 let ysize = ymax - ymin;
-let xscale = xsize / w;
-let yscale = ysize / h;
+let xscale;
+let yscale;
+
+let rowImage;
+let rowData;
+
+function resize() {
+  if (w == window.innerWidth && h == window.innerHeight)
+    return;
+
+  w = window.innerWidth;
+  h = window.innerHeight;
+
+  // adjust viewport, keeping area and centre constant
+  let cx = (xmin + xmax) / 2;
+  let cy = (ymin + ymax) / 2;
+  let area = xsize * ysize;
+  let oldAspect = xsize / ysize;
+  let newAspect = w / -h;
+  let xsize1 = Math.sqrt(area * newAspect);
+  let ysize1 = xsize1 / newAspect;
+  let xmin1 = cx - xsize1 / 2;
+  let xmax1 = cx + xsize1 / 2;
+  let ymin1 = cy - ysize1 / 2;
+  let ymax1 = cy + ysize1 / 2;
+  let xscale1 = xsize1 / w;
+  let yscale1 = ysize1 / h;
+
+  // find transform
+  const sx = xscale / xscale1;
+  const sy = yscale / yscale1;
+  const dx = (xmin - xmin1) / xscale1;
+  const dy = (ymin - ymin1) / yscale1;
+
+  xmin = xmin1;
+  xmax = xmax1;
+  ymin = ymin1;
+  ymax = ymax1;
+  xsize = xsize1;
+  ysize = ysize1;
+  xscale = xscale1;
+  yscale = yscale1;
+
+  // apply current overload to background
+  bgCtx.drawImage(canvas, 0, 0);
+  // resize front canvas (clears it)
+  canvas.width = w;
+  canvas.height = h;
+  // draw scaled image on front canvas
+  ctx.translate(dx, dy);
+  ctx.scale(sx, sy);
+  ctx.drawImage(bgCanvas, 0, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  // resize back canvas (clears it)
+  bgCanvas.width = w;
+  bgCanvas.height = h;
+
+  bgCtx.fillStyle = "rgb(" + scale[0][0] + "," + scale[0][1] + "," + scale[0][2] + ")";
+  bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
+
+  // find slice count and rendering height (multiple of 16)
+  sliceCount = Math.floor((h + 15) / 16);
+  h2 = sliceCount * 16;
+  // allocate new row image
+  rowImage = new ImageData(w, 1);
+  rowData = rowImage.data;
+
+  invalidate();
+}
+
 let y = 0;
 let yGoal = 0;
-
-cts.fillStyle = "rgb(0,128,0)";
-cts.fillRect(200, 200, w - 200, h - 200);
 
 function hsv2rgb(h, s, v) {
   let hm = h / 60;
@@ -56,12 +117,12 @@ let renderStartTime = null;
 
 function drawProgress() {
   let progress = ((yGoal + h2 - y) % h2) / h2;
-  pct.clearRect(0,0,pca.width,pca.height);
-  pct.fillStyle = "rgba(255,255,255,0.35)";
-  pct.beginPath();
-  pct.moveTo(20,20);
-  pct.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
-  pct.fill();
+  progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
+  progressCtx.fillStyle = "rgba(255,255,255,0.35)";
+  progressCtx.beginPath();
+  progressCtx.moveTo(20,20);
+  progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
+  progressCtx.fill();
 }
 
 function anim(t) {
@@ -76,7 +137,7 @@ function anim(t) {
     drawProgress();
     requestAnimationFrame(anim);
   } else {
-    pct.clearRect(0,0,pca.width,pca.height);
+    progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
   }
   document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
 }
@@ -90,9 +151,16 @@ function startRender() {
   renderStartTime = Date.now();
 }
 
-ca.onclick = function(e) {
+function invalidate() {
+  if (y == yGoal)
+    startRender();
+  else
+    yGoal = y;
+}
+
+canvas.onclick = function(e) {
   // get cursor position
-  var rect = ca.getBoundingClientRect();
+  var rect = canvas.getBoundingClientRect();
   var mx = e.clientX - rect.left;
   var my = e.clientY - rect.top;
 
@@ -111,16 +179,14 @@ ca.onclick = function(e) {
   const dy = my - my * sy;
 
   // draw scaled image
-  cts.drawImage(ca, 0, 0);
-  cts.translate(dx, dy);
-  cts.scale(sx, sy);
-  cts.drawImage(cas, 0, 0);
-  cts.setTransform(1, 0, 0, 1, 0, 0);
-  ct.clearRect(0,0,w,h);
-  if (y == yGoal)
-    startRender();
-  else
-    yGoal = y;
+  bgCtx.drawImage(canvas, 0, 0);
+  bgCtx.translate(dx, dy);
+  bgCtx.scale(sx, sy);
+  bgCtx.drawImage(bgCanvas, 0, 0);
+  bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0,0,w,h);
+
+  invalidate();
 
   xsize = xsize1;
   ysize = ysize1;
@@ -128,47 +194,56 @@ ca.onclick = function(e) {
   yscale = ysize / h;
 };
 
-let img = new ImageData(w, 1);
-let data = img.data;
-
 function iter(cx, cy) {
   let zy = cy;
   let zx = cx;
   let n = 0;
   let zx2, zy2;
-  while ((zx2 = zx * zx) + (zy2 = zy * zy) <= 4.0) {
+  while ((zx2 = zx * zx) + (zy2 = zy * zy) <= 4.0 && ++n < 4096) {
     zy = 2 * zx * zy + cy;
     zx = zx2 - zy2 + cx;
-    if (++n == 4096) break;
   }
   return n;
 }
 
-function renderRowData(cy, xmin, xscale, w, data) {
+function renderRowData(cy, xmin, xscale, w, rowData) {
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
     let n = iter(cx, cy);
     let p = x * 4;
     if (n == 4096) {
-      data[p + 0] = data[p + 1] = data[p + 2] = 0;
+      rowData[p + 0] = rowData[p + 1] = rowData[p + 2] = 0;
     } else {
       n = n % 256;
-      data[p + 0] = scale[n][0];
-      data[p + 1] = scale[n][1];
-      data[p + 2] = scale[n][2];
+      rowData[p + 0] = scale[n][0];
+      rowData[p + 1] = scale[n][1];
+      rowData[p + 2] = scale[n][2];
     }
-    data[p + 3] = 255;
+    rowData[p + 3] = 255;
   }
 }
 
-function renderRow(y) {
-  // map y coordinate to non-linear order
-  y = (Math.floor(y / sl) * 11) % ss + (y % sl) * ss;
-  let cy = ymin + yscale * y;
-  renderRowData(cy, xmin, xscale, w, data);
-  ct.putImageData(img, 0, y);
+function rowMapping(y) {
+  return (Math.floor(y / sliceCount) * 11) % 16 + (y % sliceCount) * 16;
 }
 
-ct.fillStyle = "rgb(" + scale[0][0] + "," + scale[0][1] + "," + scale[0][2] + ")";
-ct.fillRect(0,0,w,h);
-startRender();
+function renderRow(y) {
+  let y2 = rowMapping(y);
+  let cy = ymin + yscale * y2;
+  renderRowData(cy, xmin, xscale, w, rowData);
+  ctx.putImageData(rowImage, 0, y2);
+}
+
+// Handle window resizing (throttled)
+let resizeTimer = null;
+window.addEventListener("resize", function(e) {
+  if (resizeTimer !== null)
+    clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(function(){
+    resizeTimer = null;
+    resize();
+  }, 0);
+});
+
+// Set initialize and kick off rendering
+resize();
