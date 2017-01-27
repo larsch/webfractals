@@ -11,7 +11,6 @@ progressCanvas.style.top = "20px";
 progressCanvas.style.left = "20px";
 
 // viewport
-let sliceCount;
 let xmin = -2.25;
 let xmax = 1.5;
 let ymin = 1.5;
@@ -19,6 +18,7 @@ let ymax = -1.5;
 let w = 200 * (xmax - xmin);
 let h = 200 * (ymax - ymin);
 let h2;
+let bits;
 let xsize = xmax - xmin;
 let ysize = ymax - ymin;
 let xscale;
@@ -114,8 +114,8 @@ function resize() {
   bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
 
   // find slice count and rendering height (multiple of 16)
-  sliceCount = Math.floor((h + 15) / 16);
-  h2 = sliceCount * 16;
+  bits = Math.ceil(Math.log(h) / Math.log(2));
+  h2 = 1 << bits;
   // allocate new row image
   rowImage = new ImageData(w, 1);
   rowData = rowImage.data;
@@ -302,7 +302,12 @@ function saveState() {
 }
 
 function rowMapping(y) {
-  return (Math.floor(y / sliceCount) * 11) % 16 + (y % sliceCount) * 16;
+  let v;
+  for (let i = 0; i < bits; ++i) {
+    v = (v << 1) | (y & 1);
+    y >>= 1;
+  }
+  return v;
 }
 
 function renderRow(y) {
@@ -311,6 +316,11 @@ function renderRow(y) {
     let cy = ymin + yscale * y2;
     renderRowData(cy, xmin, xscale, w, rowData);
     ctx.putImageData(rowImage, 0, y2);
+    let ny = rowMapping(y2 + 1);
+    let dthis = (h2 + yGoal - y) % h2;
+    let dnext = (h2 + yGoal - ny) % h2;
+    if(dnext < dthis)
+      ctx.putImageData(rowImage, 0, y2 + 1);
   }
 }
 
