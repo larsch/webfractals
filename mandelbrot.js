@@ -74,6 +74,13 @@ loadState();
 let rowImage;
 let rowData;
 
+function getZoom() {
+  let cx = (xmin + xmax) / 2;
+  let cy = (ymin + ymax) / 2;
+  let area = xsize * ysize;
+  return [cx, cy, area];
+}
+
 function resize() {
   if (w == window.innerWidth && h == window.innerHeight)
     return;
@@ -81,35 +88,15 @@ function resize() {
   w = window.innerWidth;
   h = window.innerHeight;
 
+  let oldxscale = xscale,
+      oldyscale = yscale,
+      oldxmin = xmin,
+      oldymin = ymin;
+
   // adjust viewport, keeping area and centre constant
-  let cx = (xmin + xmax) / 2;
-  let cy = (ymin + ymax) / 2;
-  let area = xsize * ysize;
-  let oldAspect = xsize / ysize;
-  let newAspect = w / h;
-  let xsize1 = Math.sqrt(area * newAspect);
-  let ysize1 = xsize1 / newAspect;
-  let xmin1 = cx - xsize1 / 2;
-  let xmax1 = cx + xsize1 / 2;
-  let ymin1 = cy - ysize1 / 2;
-  let ymax1 = cy + ysize1 / 2;
-  let xscale1 = xsize1 / w;
-  let yscale1 = ysize1 / h;
+  let zoom = getZoom();
+  setZoom(zoom[0], zoom[1], zoom[2]);
 
-  // find transform
-  const sx = xscale / xscale1;
-  const sy = yscale / yscale1;
-  const dx = (xmin - xmin1) / xscale1;
-  const dy = (ymin - ymin1) / yscale1;
-
-  xmin = xmin1;
-  xmax = xmax1;
-  ymin = ymin1;
-  ymax = ymax1;
-  xsize = xsize1;
-  ysize = ysize1;
-  xscale = xscale1;
-  yscale = yscale1;
   steps = getAutoSteps();
   saveState();
 
@@ -119,8 +106,8 @@ function resize() {
   canvas.width = w;
   canvas.height = h;
   // draw scaled image on front canvas
-  ctx.translate(dx, dy);
-  ctx.scale(sx, sy);
+  ctx.translate((oldxmin - xmin) / xscale, (oldymin - ymin) / yscale);
+  ctx.scale(oldxscale / xscale, oldyscale / yscale);
   ctx.drawImage(bgCanvas, 0, 0);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   // resize back canvas (clears it)
@@ -332,9 +319,8 @@ function renderRowData(cy, xmin, xscale, w, rowData) {
 }
 
 function saveState() {
-  let cx = (xmin + xmax) / 2;
-  let cy = (ymin + ymax) / 2;
-  let sz = xsize * ysize;
+  let state = getZoom();
+  let cx = state[0], cy = state[1], sz = state[2];
   location.hash = 'x=' + cx + ';y=' + cy + ';a=' + sz;
 }
 
@@ -369,7 +355,7 @@ window.addEventListener("resize", function(e) {
   resizeTimer = setTimeout(function(){
     resizeTimer = null;
     resize();
-  }, 0);
+  }, 1);
 });
 
 // Set initialize and kick off rendering
