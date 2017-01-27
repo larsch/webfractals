@@ -307,9 +307,11 @@ function rowMapping(y) {
 
 function renderRow(y) {
   let y2 = rowMapping(y);
-  let cy = ymin + yscale * y2;
-  renderRowData(cy, xmin, xscale, w, rowData);
-  ctx.putImageData(rowImage, 0, y2);
+  if (y2 < h) {
+    let cy = ymin + yscale * y2;
+    renderRowData(cy, xmin, xscale, w, rowData);
+    ctx.putImageData(rowImage, 0, y2);
+  }
 }
 
 // Handle window resizing (throttled)
