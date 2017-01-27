@@ -370,6 +370,7 @@ window.addEventListener("resize", function(e) {
 resize();
 
 window.addEventListener('keypress', function(e){
+  if (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
   if (e.key == 'f') {
     if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
       if (document.exitFullscreen)
