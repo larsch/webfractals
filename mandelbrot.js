@@ -91,41 +91,26 @@ function startRender() {
 }
 
 ca.onclick = function(e) {
+  // get cursor position
   var rect = ca.getBoundingClientRect();
   var mx = e.clientX - rect.left;
   var my = e.clientY - rect.top;
-  let cx = xmin + xsize * mx / w;
-  let cy = ymin + ysize * my / h;
 
-  let xmin1 = cx - (cx - xmin) * 0.8;
-  let xmax1 = cx + (xmax - cx) * 0.8;
-  let ymin1 = cy - (cy - ymin) * 0.8;
-  let ymax1 = cy + (ymax - cy) * 0.8;
-  let xsize1 = xmax1 - xmin1;
-  let ysize1 = ymax1 - ymin1;
+  // scale viewing area
+  xmin = xmin + 0.2 * mx * xscale;
+  xmax = xmax - 0.2 * (w - mx) * xscale;
+  ymin = ymin + 0.2 * my * yscale;
+  ymax = ymax - 0.2 * (h - my) * yscale;
 
-  let dw = w * xsize / xsize1;
-  let dh = h * ysize / ysize1;
-  let dx = mx - mx * (xsize / xsize1);
-  let dy = my - my * (ysize / ysize1);
+  // find transform (translate and scale)
+  const xsize1 = xmax - xmin;
+  const ysize1 = ymax - ymin;
+  const sx = xsize / xsize1;
+  const sy = ysize / ysize1;
+  const dx = mx - mx * sx;
+  const dy = my - my * sy;
 
-  let sx = (xsize / xsize1);
-  let sy = (ysize / ysize1);
-  let tx = -dx;
-  let ty = -dy;
-
-
-  //  var imageObject = new Image();
-  //  imageObject.onload = function() {
-  //     cts.translate(dx, dy);
-  //     cts.scale(sx, sy);
-  //     cts.drawImage(imageObject, 0, 0);
-  //     cts.resetTransform();
-  //     console.log("background image set");
-  // };
-  // imageObject.src = ca.toDataURL();
-
-  // cts.putImageData(ct.getImageData(0,0,w,h), 0,0);
+  // draw scaled image
   cts.drawImage(ca, 0, 0);
   cts.translate(dx, dy);
   cts.scale(sx, sy);
@@ -137,10 +122,6 @@ ca.onclick = function(e) {
   else
     yGoal = y;
 
-  xmin = xmin1;
-  xmax = xmax1;
-  ymin = ymin1;
-  ymax = ymax1;
   xsize = xsize1;
   ysize = ysize1;
   xscale = xsize / w;
