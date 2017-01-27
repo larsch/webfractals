@@ -38,7 +38,6 @@ function loadState() {
     if (key == 'y') cy = parseFloat(value);
     if (key == 'a') area = parseFloat(value);
   }
-  console.log(cx, cy, area);
   if (cx !== null && cy !== null && area !== null) {
     let newAspect = w / h;
     xsize = Math.sqrt(area * newAspect);
@@ -49,7 +48,6 @@ function loadState() {
     ymax = cy + ysize / 2;
     xscale = xsize / w;
     yscale = ysize / h;
-    console.log('loaded state', xmin, xmax, ymin, ymax, xsize, ysize);
   }
 }
 loadState();
