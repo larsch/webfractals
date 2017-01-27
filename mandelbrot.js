@@ -205,8 +205,6 @@ function anim(t) {
 }
 
 function startRender() {
-  y = 0;
-  yGoal = 0;
   requestAnimationFrame(anim);
   renderInProgress = true;
 }
