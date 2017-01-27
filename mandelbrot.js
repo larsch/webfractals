@@ -54,6 +54,16 @@ for (let i = 0; i < 256; i++) {
 
 let renderStartTime = null;
 
+function drawProgress() {
+  let progress = ((yGoal + h2 - y) % h2) / h2;
+  pct.clearRect(0,0,pca.width,pca.height);
+  pct.fillStyle = "rgba(255,255,255,0.35)";
+  pct.beginPath();
+  pct.moveTo(20,20);
+  pct.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
+  pct.fill();
+}
+
 function anim(t) {
   let renderEndTime = Date.now() + 25;
   let before = y;
@@ -63,13 +73,7 @@ function anim(t) {
   } while (y != yGoal && Date.now() < renderEndTime);
 
   if (y != yGoal) {
-    let progress = ((yGoal + h2 - y) % h2) / h2;
-    pct.clearRect(0,0,pca.width,pca.height);
-    pct.fillStyle = "rgba(255,255,255,0.5)";
-    pct.beginPath();
-    pct.moveTo(20,20);
-    pct.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
-    pct.fill();
+    drawProgress();
     requestAnimationFrame(anim);
   } else {
     pct.clearRect(0,0,pca.width,pca.height);
