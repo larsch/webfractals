@@ -13,8 +13,8 @@ progressCanvas.style.left = "20px";
 // viewport
 let xmin = -2.25;
 let xmax = 1.5;
-let ymin = 1.5;
-let ymax = -1.5;
+let ymin = -1.5;
+let ymax = 1.5;
 let w = 200 * (xmax - xmin);
 let h = 200 * (ymax - ymin);
 let h2;
@@ -24,6 +24,29 @@ let ysize = ymax - ymin;
 let xscale;
 let yscale;
 let steps = 24;
+
+function resetZoom() {
+  let newAspect = w / h;
+  xmin = -2.25;
+  xmax = 1.5;
+  ymin = 1.5;
+  ymax = -1.5;
+  let cx = (xmax + xmin) / 2;
+  let cy = (ymax + ymin) / 2;
+  let area = Math.abs((xmax - xmin) * (ymax - ymin));
+  let aspect = w / h;
+  xsize = Math.sqrt(area * aspect);
+  ysize = xsize / aspect;
+  xmin = cx - xsize / 2;
+  xmax = cx + xsize / 2;
+  ymin = cy - ysize / 2;
+  ymax = cy + ysize / 2;
+  xscale = xsize / w;
+  yscale = ysize / h;
+  steps = getAutoSteps();
+  saveState();
+  invalidate();
+}
 
 function loadState() {
   let hash = location.hash.substr(1);
@@ -69,7 +92,7 @@ function resize() {
   let cy = (ymin + ymax) / 2;
   let area = xsize * ysize;
   let oldAspect = xsize / ysize;
-  let newAspect = w / -h;
+  let newAspect = w / h;
   let xsize1 = Math.sqrt(area * newAspect);
   let ysize1 = xsize1 / newAspect;
   let xmin1 = cx - xsize1 / 2;
@@ -264,6 +287,7 @@ function zoom(mx, my, zoom) {
   ysize = ysize1;
   xscale = xsize / w;
   yscale = ysize / h;
+  steps = getAutoSteps();
   saveState();
 
   return false;
@@ -362,5 +386,7 @@ window.addEventListener('keypress', function(e){
       else if (document.body.mozRequestFullScreen)
         document.body.mozRequestFullScreen();
     }
+  } else if (e.key == 'r') {
+    resetZoom();
   }
 });
