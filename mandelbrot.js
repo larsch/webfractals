@@ -201,7 +201,6 @@ function startRender() {
   xsize = (xmax - xmin);
   ysize = (ymax - ymin);
   requestAnimationFrame(anim);
-  renderStartTime = Date.now();
 }
 
 function invalidate() {
@@ -214,6 +213,7 @@ function invalidate() {
     startRender();
   else
     yGoal = y;
+  renderStartTime = Date.now();
 }
 
 canvas.addEventListener('contextmenu', function(e){
