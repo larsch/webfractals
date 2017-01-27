@@ -109,7 +109,8 @@ function resize() {
   bgCanvas.width = w;
   bgCanvas.height = h;
 
-  bgCtx.fillStyle = "rgb(" + scale[0][0] + "," + scale[0][1] + "," + scale[0][2] + ")";
+  let def = hsv2rgb(0, 0.5, 0.5);
+  bgCtx.fillStyle = "rgb(" + def[0] + "," + def[1] + "," + def[2] + ")";
   bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
 
   // find slice count and rendering height (multiple of 16)
@@ -140,8 +141,18 @@ function hsv2rgb(h, s, v) {
 }
 
 let scale = new Array(256);
+let palette = new Uint8ClampedArray(256 * 4);
+let background = new Uint8ClampedArray(4);
+background[0] = 0;
+background[1] = 0;
+background[2] = 0;
+background[3] = 255;
 for (let i = 0; i < 256; i++) {
-  scale[i] = hsv2rgb(((i * 360 * 4) / 256) % 360, 1.0, 0.5);
+  let rgb = hsv2rgb(((i * 360 * 4) / 256) % 360, 1.0, 0.5);
+  palette[i*4+0] = rgb[0];
+  palette[i*4+1] = rgb[1];
+  palette[i*4+2] = rgb[2];
+  palette[i*4+3] = 255;
 }
 
 let renderStartTime = null;
@@ -269,14 +280,17 @@ function renderRowData(cy, xmin, xscale, w, rowData) {
     let n = iter(cx, cy);
     let p = x * 4;
     if (n == 4096) {
-      rowData[p + 0] = rowData[p + 1] = rowData[p + 2] = 0;
+      rowData[p+0] = 0;
+      rowData[p+1] = 0;
+      rowData[p+2] = 0;
+      rowData[p+3] = 255;
     } else {
-      n = n % 256;
-      rowData[p + 0] = scale[n][0];
-      rowData[p + 1] = scale[n][1];
-      rowData[p + 2] = scale[n][2];
+      n = (n % 256) * 4;
+      rowData[p+0] = palette[n+0];
+      rowData[p+1] = palette[n+1];
+      rowData[p+2] = palette[n+2];
+      rowData[p+3] = palette[n+3];
     }
-    rowData[p + 3] = 255;
   }
 }
 
