@@ -149,6 +149,7 @@ function resize() {
 
 let y = 0;
 let yGoal = 0;
+let renderInProgress = false;
 
 function hsv2rgb(h, s, v) {
   let hm = h / 60;
@@ -216,6 +217,7 @@ function anim(t) {
     requestAnimationFrame(anim);
   } else {
     clearProgress();
+    renderInProgress = false;
   }
   document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
 }
@@ -224,13 +226,14 @@ function startRender() {
   y = 0;
   yGoal = 0;
   requestAnimationFrame(anim);
+  renderInProgress = true;
 }
 
 function invalidate() {
-  if (y == yGoal)
-    startRender();
-  else
+  if (renderInProgress)
     yGoal = y;
+  else
+    startRender();
   renderStartTime = Date.now();
 }
 
@@ -248,6 +251,14 @@ canvas.addEventListener('click', function(e){
   var mx = e.clientX - rect.left;
   var my = e.clientY - rect.top;
   zoom(mx, my, 0.2);
+});
+
+canvas.addEventListener('wheel', function(e){
+  var rect = canvas.getBoundingClientRect();
+  var mx = e.clientX - rect.left;
+  var my = e.clientY - rect.top;
+  if (e.deltaY)
+    zoom(mx, my, -0.2 * Math.sign(e.deltaY));
 });
 
 function getAutoSteps() {
