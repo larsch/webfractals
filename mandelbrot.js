@@ -210,8 +210,6 @@ function invalidate() {
       Math.abs(xsize),
       Math.abs(ysize)));
   steps = Math.floor(223.0/f);
-  console.log(steps);
-
   if (y == yGoal)
     startRender();
   else
