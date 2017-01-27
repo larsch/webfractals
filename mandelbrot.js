@@ -23,6 +23,7 @@ let xsize = xmax - xmin;
 let ysize = ymax - ymin;
 let xscale;
 let yscale;
+let steps = 24;
 
 function loadState() {
   let hash = location.hash.substr(1);
@@ -206,6 +207,13 @@ function startRender() {
 }
 
 function invalidate() {
+  var f = Math.sqrt(
+    0.001+2.0 * Math.min(
+      Math.abs(xsize),
+      Math.abs(ysize)));
+  steps = Math.floor(223.0/f);
+  console.log(steps);
+
   if (y == yGoal)
     startRender();
   else
@@ -267,7 +275,7 @@ function iter(cx, cy) {
   let zx = cx;
   let n = 0;
   let zx2, zy2;
-  while ((zx2 = zx * zx) + (zy2 = zy * zy) <= 4.0 && ++n < 4096) {
+  while ((zx2 = zx * zx) + (zy2 = zy * zy) <= 4.0 && ++n < steps) {
     zy = 2 * zx * zy + cy;
     zx = zx2 - zy2 + cx;
   }
@@ -279,7 +287,7 @@ function renderRowData(cy, xmin, xscale, w, rowData) {
     let cx = xmin + xscale * x;
     let n = iter(cx, cy);
     let p = x * 4;
-    if (n == 4096) {
+    if (n == steps) {
       rowData[p+0] = 0;
       rowData[p+1] = 0;
       rowData[p+2] = 0;
@@ -316,11 +324,11 @@ function renderRow(y) {
     let cy = ymin + yscale * y2;
     renderRowData(cy, xmin, xscale, w, rowData);
     ctx.putImageData(rowImage, 0, y2);
-    let ny = rowMapping(y2 + 1);
+    let ny = rowMapping(y2 ^ 1);
     let dthis = (h2 + yGoal - y) % h2;
     let dnext = (h2 + yGoal - ny) % h2;
     if(dnext < dthis)
-      ctx.putImageData(rowImage, 0, y2 + 1);
+      ctx.putImageData(rowImage, 0, y2 ^ 1);
   }
 }
 
