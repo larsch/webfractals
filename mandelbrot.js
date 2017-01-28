@@ -313,7 +313,6 @@ function startJobs() {
           let renderTime = Date.now() - renderStartTime;
           if (benchmarkRecord === null || renderTime < benchmarkRecord)
             benchmarkRecord = renderTime;
-          console.log(benchmarkRecord);
           invalidate();
         }
         break;
@@ -529,7 +528,6 @@ window.addEventListener('keypress', function(e){
   } else if (e.key == 'a') {
     toggleAbout();
   } else if (e.key == 'b') {
-    console.log('toggle benchmark mode');
     benchmarkMode = !benchmarkMode;
     benchmarkRecord = null;
     resize();
