@@ -13,9 +13,11 @@ let substep = null;
 
 const log2Inverse = 1.0 / Math.log(2.0);
 const logHalflog2Inverse = Math.log(0.5)*log2Inverse;
+const log = Math.log;
+
 function fraction(zx2, zy2)
 {
-  return 5 - logHalflog2Inverse - Math.log(Math.log(zx2+zy2)) * log2Inverse;
+  return 5 - logHalflog2Inverse - log(log(zx2+zy2)) * log2Inverse;
 }
 
 function iter(cx, cy) {
@@ -33,16 +35,15 @@ function iter(cx, cy) {
     zx2 = zx * zx;
     zy2 = zy * zy;
   }
-  let f = fraction(zx2, zy2);
-  return [n, f];
+  return [n, zx2, zy2];
 }
 
 function renderRowData(y) {
   let cy = ymin + yscale * y;
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
-    let r = iter(cx, cy);
-    let n = r[0];
+    let res = iter(cx, cy);
+    let n = res[0];
     let p = x * 4;
     if (n == steps) {
       data[p+0] = 0;
@@ -50,8 +51,9 @@ function renderRowData(y) {
       data[p+2] = 0;
       data[p+3] = 255;
     } else {
+      let zx2 = res[1], zy2 = res[2];
+      let f2 = fraction(zx2, zy2);
       let n1 = (n % 256) * 4;
-      let f2 = r[1];
       let f1 = 1.0 - f2;
       let n2 = ((n + 1) % 256) * 4;
       data[p+0] = f1 * palette[n1+0] + f2 * palette[n2+0];
@@ -81,8 +83,7 @@ onmessage = function(e) {
       data = new Uint8ClampedArray(w * 4);
     }
   } else {
-    let y = msg;
-    renderRowData(y);
-    postMessage({y: y, data: data, generation: generation, substep: substep});
+    renderRowData(msg);
+    postMessage({y: msg, data: data, generation: generation, substep: substep});
   }
 };
