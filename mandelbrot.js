@@ -224,7 +224,7 @@ let nextWorker = 0;
 
 function handleMessage(e) {
   let msg = e.data;
-  if (true || msg.generation == generation) {
+  if (msg.generation == generation) {
     let img = new ImageData(msg.data, w, 1);
     ctx.putImageData(img, 0, msg.y);
     --remainingRows;
@@ -294,7 +294,7 @@ function invalidate() {
   if (renderInProgress) {
     ++generation;
     postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w});
-    remainingRows = queueSize + h;
+    remainingRows = h;
     yGoal = y;
   } else {
     remainingRows = h;
@@ -447,28 +447,77 @@ document.body.focus();
 // Set initialize and kick off rendering
 resize();
 
+function toggleFullscreen() {
+  if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen)
+      document.exitFullscreen();
+    if (document.mozCancelFullScreen)
+      document.mozCancelFullScreen();
+    else if (document.webkitCancelFullScreen)
+      document.webkitCancelFullScreen();
+  } else {
+    if (document.body.requestFullscreen)
+      document.body.requestFullscreen();
+    else if (document.body.webkitRequestFullScreen)
+      document.body.webkitRequestFullScreen();
+    else if (document.body.mozRequestFullScreen)
+      document.body.mozRequestFullScreen();
+  }
+}
+
 window.addEventListener('keypress', function(e){
   if (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
   if (e.key == 'f') {
-    if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
-      if (document.exitFullscreen)
-        document.exitFullscreen();
-      if (document.mozCancelFullScreen)
-        document.mozCancelFullScreen();
-      else if (document.webkitCancelFullScreen)
-        document.webkitCancelFullScreen();
-    } else {
-      if (document.body.requestFullscreen)
-        document.body.requestFullscreen();
-      else if (document.body.webkitRequestFullScreen)
-        document.body.webkitRequestFullScreen();
-      else if (document.body.mozRequestFullScreen)
-        document.body.mozRequestFullScreen();
-    }
+    toggleFullscreen();
   } else if (e.key == 'r') {
     resetZoom();
   } else if  (e.key == 'w') {
     useWorkers = !useWorkers;
     invalidate();
+  } else if (e.key == 'Tab') {
+    e.preventDefault();
+    toggleToolbar();
+  } else if (e.key == 'a') {
+    toggleAbout();
   }
 });
+
+let aboutVisible = false;
+
+function toggleAbout() {
+  let elem = document.getElementById("about");
+  if (aboutVisible) {
+    elem.style.display = 'none';
+    aboutVisible = false;
+  } else {
+    elem.style.display = 'block';
+    aboutVisible = true;
+  }
+}
+
+let toolbarVisible = true;
+
+function toggleToolbar() {
+  let elem = document.getElementById("toolbar");
+  let eye = document.getElementById("eye");
+  if (toolbarVisible) {
+    elem.className = "toolbar toolbar-hidden";
+    eye.className = "fa fa-eye";
+    toolbarVisible = false;
+  } else {
+    elem.className = "toolbar";
+    eye.className = "fa fa-eye-slash";
+    toolbarVisible = true;
+  }
+}
+
+document.getElementById("close-about-button").addEventListener('click', (e) => {
+  e.preventDefault();
+  toggleAbout();
+});
+
+document.getElementById("redraw-button").addEventListener('click', invalidate);
+document.getElementById("reset-button").addEventListener('click', resetZoom);
+document.getElementById("fullscreen-button").addEventListener('click', toggleFullscreen);
+document.getElementById("about-button").addEventListener('click', toggleAbout);
+document.getElementById("toolbar-button").addEventListener('click', toggleToolbar);

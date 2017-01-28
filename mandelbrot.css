@@ -27,3 +27,52 @@ canvas#progress {
    -ms-user-select: none;
    user-select: none;
 }
+
+.toolbar {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translate(-50%, 0);
+    z-index: 3;
+    font-size: 0;
+    padding: 8px;
+}
+
+.toolbar-hidden button {
+    opacity: 0.0;
+}
+
+button {
+    font-size: 18pt;
+    margin: 4px;
+    word-spacing: -2px;
+    padding: 0px 4px 2px 4px;
+    opacity: 0.25;
+    font-weight: bold;
+    border-radius: 2px;
+}
+button:hover {
+    opacity: 0.75;
+}
+
+#about {
+    z-index: 3;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255,255,255,0.75);
+    border: 2px solid rgba(255,255,255,0.75);
+    padding: 8px;
+    border-radius: 8px;
+    display: none;
+}
+
+#close-about-button {
+    float: right;
+}
+
+p {
+    /* padding: 0px; */
+    /* margin: 0px; */
+}

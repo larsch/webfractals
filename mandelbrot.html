@@ -6,6 +6,7 @@
     <meta name="description" content="Mandelbrot">
     <meta name="author" content="">
     <link rel="stylesheet" href="mandelbrot.css">
+    <link rel="stylesheet" href="css/font-awesome.min.css">
     <!--[if lt IE 9]>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
         <![endif]-->
@@ -16,6 +17,27 @@
     <canvas id="progress"></canvas>
     <div>
       Rendering time: <span id="renderTime">0</span> msec
+    </div>
+    <div id="toolbar" class="toolbar">
+      <button id="toolbar-button" title="Toggle toolbar (TAB)"><i id="eye" class="fa fa-eye-slash" aria-hidden="true"></i></button>
+      <button id="redraw-button" title="Redraw (D)"><i class="fa fa-refresh" aria-hidden="true"></i></button>
+      <button id="reset-button" title="Reset Zoom (R)"><i class="fa fa-eraser" aria-hidden="true"></i></button>
+      <button id="fullscreen-button" title="Fullscreen (F)"><i class="fa fa-arrows-alt" aria-hidden="true"></i></button>
+      <button id="about-button" title="About (A)"><i class="fa fa-question-circle-o" aria-hidden="true"></i></button>
+    </div>
+    <div id="about" class="about">
+      <a id="close-about-button" href="#"><i class="fa fa-times" aria-hidden="true"></i></a>
+      <p>Javascript Mandelbrot Toy - by Lars Christensen &lt;<a href="mailto:larsch@belunktum.dk">larsch@belunktum.dk</a>&gt;
+      </p>
+
+      <p>Features:
+        <ul>
+          <li>Fast multi-core rendering using WebWorkers</li>
+          <li>Smooth zoom/resize used image scaling</li>
+          <li>Auto iteration limit</li>
+          <li>Smooth palette</li>
+        </ul>
+      </p>
     </div>
     <script src="mandelbrot.js"></script>
   </body>
