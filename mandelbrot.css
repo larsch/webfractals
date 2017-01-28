@@ -47,12 +47,12 @@ button {
     margin: 4px;
     word-spacing: -2px;
     padding: 0px 4px 2px 4px;
-    opacity: 0.25;
+    opacity: 0.50;
     font-weight: bold;
     border-radius: 2px;
 }
 button:hover {
-    opacity: 0.75;
+    opacity: 0.85;
 }
 
 #about {

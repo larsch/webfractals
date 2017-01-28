@@ -12,6 +12,9 @@ progressCanvas.height = 40;
 progressCanvas.style.top = "20px";
 progressCanvas.style.left = "20px";
 
+let benchmarkMode = false;
+let benchmarkRecord = null;
+
 // viewport
 let xmin = -2.25;
 let xmax = 1.5;
@@ -96,11 +99,13 @@ function getZoom() {
 }
 
 function resize() {
-  if (w == window.innerWidth && h == window.innerHeight)
+  let newWidth = benchmarkMode ? 800 : window.innerWidth;
+  let newHeight = benchmarkMode ? 600 : window.innerHeight;
+  if (w == newWidth && h == newHeight)
     return;
 
-  w = window.innerWidth;
-  h = window.innerHeight;
+  w = newWidth;
+  h = newHeight;
 
   let oldxscale = xscale,
       oldyscale = yscale,
@@ -302,6 +307,13 @@ function startJobs() {
         postAllWorkers({steps: steps, generation: generation, xmin: xmin + step[0] * xscale, xscale: xscale, ymin: ymin + step[0] * yscale, yscale: yscale, w: w, substep: substep});
       } else {
         renderInProgress = false;
+        if (benchmarkMode) {
+          let renderTime = Date.now() - renderStartTime;
+          if (benchmarkRecord === null || renderTime < benchmarkRecord)
+            benchmarkRecord = renderTime;
+          console.log(benchmarkRecord);
+          invalidate();
+        }
         break;
       }
     }
@@ -477,7 +489,7 @@ window.addEventListener("resize", function(e) {
   }, 1);
 });
 
-document.body.focus();
+canvas.focus();
 
 // Set initialize and kick off rendering
 resize();
@@ -514,6 +526,12 @@ window.addEventListener('keypress', function(e){
     toggleToolbar();
   } else if (e.key == 'a') {
     toggleAbout();
+  } else if (e.key == 'b') {
+    console.log('toggle benchmark mode');
+    benchmarkMode = !benchmarkMode;
+    benchmarkRecord = null;
+    resize();
+    invalidate();
   }
 });
 

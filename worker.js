@@ -59,9 +59,8 @@ function renderRowData(y) {
       data[p+0] = f1 * palette[n1+0] + f2 * palette[n2+0];
       data[p+1] = f1 * palette[n1+1] + f2 * palette[n2+1];
       data[p+2] = f1 * palette[n1+2] + f2 * palette[n2+2];
-      data[p+3] = f1 * palette[n1+3] + f2 * palette[n2+3];
+      data[p+3] = 255;
     }
-    data[p + 3] = 255;
   }
 }
 
