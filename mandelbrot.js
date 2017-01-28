@@ -241,12 +241,11 @@ let nextWorker = 0;
 function handleMessage(e) {
   let msg = e.data;
   if (msg.generation == generation) {
-    let img = new ImageData(msg.data, w, 1);
     if (msg.substep === 0) {
       ctx.globalAlpha = 1.0;
-      ctx.putImageData(img, 0, msg.y);
+      ctx.putImageData(new ImageData(msg.data, w, 1), 0, msg.y);
     } else {
-      offscreenCtx.putImageData(img, 0, 0);
+      offscreenCtx.putImageData(new ImageData(msg.data, w, 1), 0, 0);
       ctx.globalAlpha = 1.0 / (msg.substep + 1);
       ctx.drawImage(offscreenCanvas, 0, msg.y);
     }
@@ -259,7 +258,7 @@ function handleMessage(e) {
 }
 
 for (let i = 0; i < workerCount; ++i) {
-  workers[i] = new Worker("./worker.js");
+  workers[i] = new Worker("./worker.js?" + Date.now());
   workers[i].postMessage({palette: palette, id: i});
   workers[i].onmessage = handleMessage;
 }
