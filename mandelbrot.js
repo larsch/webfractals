@@ -358,14 +358,50 @@ function getMousePosition(ev) {
   return [mx, my];
 }
 
-canvas.addEventListener('contextmenu', function(e){
+let isDepressed = false;
+let lx, ly;
+
+canvas.addEventListener('mousedown', (e) => {
   e.preventDefault();
-  zoom(getMousePosition(e), -0.2);
+  isDepressed = true;
+  [lx, ly] = getMousePosition(e);
 });
 
-canvas.addEventListener('click', function(e){
+canvas.addEventListener('mouseup', (e) => {
   e.preventDefault();
-  zoom(getMousePosition(e), 0.2);
+  isDepressed = false;
+});
+
+
+let dragTimer = null;
+let dragPos = null;
+function handleDrag() {
+  let dx = dragPos[0] - lx;
+  let dy = dragPos[1] - ly;
+  xmin -= dx * xscale;
+  xmax -= dx * xscale;
+  ymin -= dy * yscale;
+  ymax -= dy * yscale;
+  saveState();
+  ctx.drawImage(canvas, dx, dy);
+  invalidate();
+  lx = dragPos[0];
+  ly = dragPos[1];
+}
+
+canvas.addEventListener('mousemove', (e) => {
+  e.preventDefault();
+  if (isDepressed) {
+    if (dragTimer !== null)
+      clearTimeout(dragTimer);
+    dragTimer = setTimeout(handleDrag, 1);
+    dragPos = getMousePosition(e);
+  }
+});
+
+canvas.addEventListener('mouseleave', (e) => {
+  e.preventDefault();
+  isDepressed = false;
 });
 
 canvas.addEventListener('wheel', function(e){
