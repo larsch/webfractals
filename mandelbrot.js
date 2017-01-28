@@ -4,6 +4,9 @@ let ctx = canvas.getContext("2d");
 let bgCtx = bgCanvas.getContext("2d");
 let progressCanvas = document.getElementById("progress");
 let progressCtx = progressCanvas.getContext("2d");
+
+let offscreenCanvas = document.getElementById("offscreen");
+let offscreenCtx = offscreenCanvas.getContext("2d");
 progressCanvas.width = 40;
 progressCanvas.height = 40;
 progressCanvas.style.top = "20px";
@@ -23,6 +26,17 @@ let ysize = ymax - ymin;
 let xscale;
 let yscale;
 let steps = 24;
+let substep = 0;
+let substeps = [
+  [0.0,0.0],
+  [0.5,0.5],
+  [0.5,0.0],
+  [0.0,0.5],
+  [0.25,0.25],
+  [0.75,0.75],
+  [0.25,0.75],
+  [0.75,0.25]
+];
 
 function resetZoom() {
   let newAspect = w / h;
@@ -113,6 +127,8 @@ function resize() {
   // resize back canvas (clears it)
   bgCanvas.width = w;
   bgCanvas.height = h;
+
+  offscreenCanvas.width = w;
 
   let def = hsv2rgb(0, 0.5, 0.5);
   bgCtx.fillStyle = "rgb(" + def[0] + "," + def[1] + "," + def[2] + ")";
@@ -226,7 +242,14 @@ function handleMessage(e) {
   let msg = e.data;
   if (msg.generation == generation) {
     let img = new ImageData(msg.data, w, 1);
-    ctx.putImageData(img, 0, msg.y);
+    if (msg.substep === 0) {
+      ctx.globalAlpha = 1.0;
+      ctx.putImageData(img, 0, msg.y);
+    } else {
+      offscreenCtx.putImageData(img, 0, 0);
+      ctx.globalAlpha = 1.0 / (msg.substep + 1);
+      ctx.drawImage(offscreenCanvas, 0, msg.y);
+    }
     --remainingRows;
     drawProgressWheel(remainingRows / h);
   }
@@ -273,16 +296,27 @@ function startJobs() {
   while (queueSize < queueLimit) {
     startJob();
     if (y == yGoal) {
-      renderInProgress = false;
-      break;
+      if (substep + 1 < substeps.length) {
+        ++substep;
+        let step = substeps[substep];
+        postAllWorkers({steps: steps, generation: generation, xmin: xmin + step[0] * xscale, xscale: xscale, ymin: ymin + step[0] * yscale, yscale: yscale, w: w, substep: substep});
+      } else {
+        renderInProgress = false;
+        break;
+      }
     }
   }
 }
 
+function initRender() {
+  ++generation;
+  remainingRows = h;
+  postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w, substep: 0});
+}
+
 function startRender() {
   if (useWorkers) {
-    ++generation;
-    postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w});
+    initRender();
     startJobs();
   } else {
     requestAnimationFrame(anim);
@@ -290,16 +324,17 @@ function startRender() {
   renderInProgress = true;
 }
 
+function restartRender() {
+  yGoal = y; // keep going
+  initRender();
+}
+
 function invalidate() {
-  if (renderInProgress) {
-    ++generation;
-    postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w});
-    remainingRows = h;
-    yGoal = y;
-  } else {
-    remainingRows = h;
+  substep = 0;
+  if (renderInProgress)
+    restartRender();
+  else
     startRender();
-  }
   renderStartTime = Date.now();
 }
 

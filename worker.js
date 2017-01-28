@@ -8,6 +8,7 @@ let yscale = null;
 let data = null;
 let generation = null;
 let id = null;
+let substep = null;
 
 
 const log2Inverse = 1.0 / Math.log(2.0);
@@ -76,11 +77,12 @@ onmessage = function(e) {
       yscale = msg.yscale;
       generation = msg.generation;
       w = msg.w;
+      substep = msg.substep;
       data = new Uint8ClampedArray(w * 4);
     }
   } else {
     let y = msg;
     renderRowData(y);
-    postMessage({y: y, data: data, generation: generation});
+    postMessage({y: y, data: data, generation: generation, substep: substep});
   }
 };
