@@ -154,7 +154,10 @@ background[1] = 0;
 background[2] = 0;
 background[3] = 255;
 for (let i = 0; i < 256; i++) {
-  let rgb = hsv2rgb(((i * 360 * 4) / 256) % 360, 1.0, 0.75);
+  let h = ((i * 360) / 64) % 360;
+  let v = 0.6 + 0.3 * Math.sin(i / 16 * Math.PI);
+  let s = 0.75 + 0.23 * Math.cos(i / 8 * Math.PI);
+  let rgb = hsv2rgb(h, s, v);
   palette[i*4+0] = rgb[0];
   palette[i*4+1] = rgb[1];
   palette[i*4+2] = rgb[2];
@@ -167,11 +170,10 @@ function drawProgressTime(time) {
   progressCtx.fillStyle = 'white';
   progressCtx.textAlign = 'center';
   progressCtx.textBaseline = 'middle';
-  progressCtx.fillText(Date.now() - renderStartTime, 20, 20);
+  progressCtx.fillText(time, 20, 20);
 }
 
-function drawProgress() {
-  let progress = ((yGoal + h2 - y) % h2) / h2;
+function drawProgressWheel(progress) {
   progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
   progressCtx.fillStyle = "rgba(255,255,255,0.35)";
   progressCtx.beginPath();
@@ -179,6 +181,11 @@ function drawProgress() {
   progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
   progressCtx.fill();
   drawProgressTime(Date.now() - renderStartTime);
+}
+
+function drawProgress() {
+  let progress = ((yGoal + h2 - y) % h2) / h2;
+  drawProgressWheel(progress);
 }
 
 function clearProgress() {
@@ -204,16 +211,95 @@ function anim(t) {
   document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
 }
 
+let useWorkers = true;
+let workerCount = navigator.hardwareConcurrency * 2;
+if (!workerCount)
+  workerCount = 8;
+let workers = new Array(workerCount);
+let generation = 0;
+let queueSize = 0;
+let queueLimit = 64;
+let nextWorker = 0;
+
+
+function handleMessage(e) {
+  let msg = e.data;
+  if (true || msg.generation == generation) {
+    let img = new ImageData(msg.data, w, 1);
+    ctx.putImageData(img, 0, msg.y);
+    --remainingRows;
+    drawProgressWheel(remainingRows / h);
+  }
+  --queueSize;
+  if (renderInProgress)
+    startJobs();
+}
+
+for (let i = 0; i < workerCount; ++i) {
+  workers[i] = new Worker("./worker.js");
+  workers[i].postMessage({palette: palette, id: i});
+  workers[i].onmessage = handleMessage;
+}
+
+let remainingRows = 0;
+
+function postAllWorkers(msg) {
+  for (let i = 0 ; i < workerCount; ++i)
+    workers[i].postMessage(msg);
+}
+
+function startJob() {
+  let y2 = rowMapping(y);
+  if (y2 < h) {
+    let cy = ymin + yscale * y2;
+    workers[nextWorker].postMessage(y2);
+    nextWorker = (nextWorker + 1) % workerCount;
+    ++queueSize;
+  }
+  y = (y + 1) % h2;
+}
+
+
+// function drawProgressInfo(){
+//   ctx.fillStyle = 'white';
+//   ctx.fillRect(20, h-40, 200, 20);
+//   ctx.fillStyle = 'black';
+//   ctx.textAlign = 'left';
+//   ctx.textBaseline = 'middle';
+//   ctx.fillText('y=' + y + ', yGoal=' + yGoal, 30, h - 30);
+// }
+
+function startJobs() {
+  while (queueSize < queueLimit) {
+    startJob();
+    if (y == yGoal) {
+      renderInProgress = false;
+      break;
+    }
+  }
+}
+
 function startRender() {
-  requestAnimationFrame(anim);
+  if (useWorkers) {
+    ++generation;
+    postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w});
+    startJobs();
+  } else {
+    requestAnimationFrame(anim);
+  }
   renderInProgress = true;
 }
 
 function invalidate() {
-  if (renderInProgress)
+  if (renderInProgress) {
+    ++generation;
+    postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w});
+    remainingRows = queueSize + h;
     yGoal = y;
-  else
+  } else {
+    remainingRows = h;
     startRender();
+  }
   renderStartTime = Date.now();
 }
 
@@ -272,14 +358,14 @@ function zoom(pos, zoom) {
   bgCtx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0,0,w,h);
 
-  invalidate();
-
   xsize = xsize1;
   ysize = ysize1;
   xscale = xsize / w;
   yscale = ysize / h;
   steps = getAutoSteps();
   saveState();
+
+  invalidate();
 
   return false;
 }
@@ -356,6 +442,8 @@ window.addEventListener("resize", function(e) {
   }, 1);
 });
 
+document.body.focus();
+
 // Set initialize and kick off rendering
 resize();
 
@@ -379,5 +467,8 @@ window.addEventListener('keypress', function(e){
     }
   } else if (e.key == 'r') {
     resetZoom();
+  } else if  (e.key == 'w') {
+    useWorkers = !useWorkers;
+    invalidate();
   }
 });

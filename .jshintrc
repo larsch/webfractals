@@ -1,0 +1,10 @@
+{ "esversion":6 ,
+  "moz": true,
+  "strict": "implied",
+  "browser": true,
+  "globals": {
+      "ImageData": true,
+      "onmessage": true,
+      "postMessage": true
+  }
+}
