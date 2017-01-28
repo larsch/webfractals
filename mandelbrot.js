@@ -14,6 +14,7 @@ progressCanvas.style.left = "20px";
 
 let benchmarkMode = false;
 let benchmarkRecord = null;
+let showPerformance = false;
 
 // viewport
 let xmin = -2.25;
@@ -255,7 +256,8 @@ function handleMessage(e) {
       ctx.drawImage(offscreenCanvas, 0, msg.y);
     }
     --remainingRows;
-    drawProgressWheel(remainingRows / totalRows);
+    if (showPerformance)
+      drawProgressWheel(remainingRows / totalRows);
   }
   --queueSize;
   if (renderInProgress)
@@ -532,6 +534,8 @@ window.addEventListener('keypress', function(e){
     benchmarkRecord = null;
     resize();
     invalidate();
+  } else if (e.key == 'p') {
+    togglePerformance();
   }
 });
 
@@ -569,8 +573,17 @@ document.getElementById("close-about-button").addEventListener('click', (e) => {
   toggleAbout();
 });
 
+function togglePerformance() {
+  showPerformance = !showPerformance;
+  if (showPerformance)
+    clearProgress();
+  else
+    progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
+}
+
 document.getElementById("redraw-button").addEventListener('click', invalidate);
 document.getElementById("reset-button").addEventListener('click', resetZoom);
 document.getElementById("fullscreen-button").addEventListener('click', toggleFullscreen);
 document.getElementById("about-button").addEventListener('click', toggleAbout);
 document.getElementById("toolbar-button").addEventListener('click', toggleToolbar);
+document.getElementById("performance-button").addEventListener('click', togglePerformance);
