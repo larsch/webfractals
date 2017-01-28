@@ -74,7 +74,7 @@ function loadState() {
   let hash = location.hash.substr(1);
   let parts = hash.split(';');
   let cx = null, cy = null, area = null;
-  for (let i in parts) {
+  for (let i = 0; i < parts.length; ++i) {
     let part = parts[i];
     let kv = part.split('=');
     let key = kv[0];
@@ -407,7 +407,7 @@ canvas.addEventListener('mouseleave', (e) => {
 
 canvas.addEventListener('wheel', function(e){
   if (e.deltaY)
-    zoom(getMousePosition(e), -0.2 * Math.sign(e.deltaY));
+    zoom(getMousePosition(e), -0.1 * Math.sign(e.deltaY));
 });
 
 function getAutoSteps() {
