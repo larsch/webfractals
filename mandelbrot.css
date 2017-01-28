@@ -76,3 +76,16 @@ p {
     /* padding: 0px; */
     /* margin: 0px; */
 }
+
+#zoom-limit {
+    font-size: 38pt;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 4;
+    font-weight: bold;
+    opacity: 0.75;
+    color: white;
+    pointer-events: none;
+}

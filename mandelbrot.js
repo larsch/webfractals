@@ -66,6 +66,7 @@ function setZoom(cx, cy, area) {
   ymax = cy + ysize / 2;
   xscale = xsize / w;
   yscale = ysize / h;
+  document.getElementById("zoom-limit").style.display = (area < 1e-26) ? 'block' : 'none';
   steps = getAutoSteps();
 }
 
@@ -420,19 +421,31 @@ function getAutoSteps() {
 function zoom(pos, zoom) {
   let mx = pos[0];
   let my = pos[1];
+
   // scale viewing area
-  xmin = xmin + zoom * mx * xscale;
-  xmax = xmax - zoom * (w - mx) * xscale;
-  ymin = ymin + zoom * my * yscale;
-  ymax = ymax - zoom * (h - my) * yscale;
+  let xmin1 = xmin + zoom * mx * xscale;
+  let xmax1 = xmax - zoom * (w - mx) * xscale;
+  let ymin1 = ymin + zoom * my * yscale;
+  let ymax1 = ymax - zoom * (h - my) * yscale;
 
   // find transform (translate and scale)
-  const xsize1 = xmax - xmin;
-  const ysize1 = ymax - ymin;
+  const xsize1 = xmax1 - xmin1;
+  const ysize1 = ymax1 - ymin1;
   const sx = xsize / xsize1;
   const sy = ysize / ysize1;
   const dx = mx - mx * sx;
   const dy = my - my * sy;
+
+  let area = xsize1 * ysize1;
+  if (area < 1e-28)
+    return;
+
+  let zoomDisplay = (area < 1e-26) ? 'block' : 'none';
+  let style = document.getElementById("zoom-limit").style;
+  if (style.display != zoomDisplay)
+    style.display = zoomDisplay;
+
+  [xmin, xmax, ymin, ymax] = [xmin1, xmax1, ymin1, ymax1];
 
   // draw scaled image
   bgCtx.drawImage(canvas, 0, 0);
