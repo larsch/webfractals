@@ -2,15 +2,9 @@ let canvas = document.getElementById("canvas");
 let bgCanvas = document.getElementById("scaled");
 let ctx = canvas.getContext("2d");
 let bgCtx = bgCanvas.getContext("2d");
-let progressCanvas = document.getElementById("progress");
-let progressCtx = progressCanvas.getContext("2d");
 
 let offscreenCanvas = document.getElementById("offscreen");
 let offscreenCtx = offscreenCanvas.getContext("2d");
-progressCanvas.width = 40;
-progressCanvas.height = 40;
-progressCanvas.style.top = "20px";
-progressCanvas.style.left = "20px";
 
 // viewport
 let xmin = -2.25;
@@ -182,33 +176,6 @@ for (let i = 0; i < 256; i++) {
 
 let renderStartTime = null;
 
-function drawProgressTime(time) {
-  progressCtx.fillStyle = 'white';
-  progressCtx.textAlign = 'center';
-  progressCtx.textBaseline = 'middle';
-  progressCtx.fillText(time, 20, 20);
-}
-
-function drawProgressWheel(progress) {
-  progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
-  progressCtx.fillStyle = "rgba(255,255,255,0.35)";
-  progressCtx.beginPath();
-  progressCtx.moveTo(20,20);
-  progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
-  progressCtx.fill();
-  drawProgressTime(Date.now() - renderStartTime);
-}
-
-function drawProgress() {
-  let progress = ((yGoal + h2 - y) % h2) / h2;
-  drawProgressWheel(progress);
-}
-
-function clearProgress() {
-  progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
-  drawProgressTime(Date.now() - renderStartTime);
-}
-
 function anim(t) {
   let renderEndTime = Date.now() + 25;
   let before = y;
@@ -218,10 +185,8 @@ function anim(t) {
   } while (y != yGoal && Date.now() < renderEndTime);
 
   if (y != yGoal) {
-    drawProgress();
     requestAnimationFrame(anim);
   } else {
-    clearProgress();
     renderInProgress = false;
   }
   document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
@@ -251,7 +216,6 @@ function handleMessage(e) {
       ctx.drawImage(offscreenCanvas, 0, msg.y);
     }
     --remainingRows;
-    drawProgressWheel(remainingRows / h);
   }
   --queueSize;
   if (renderInProgress)
@@ -282,15 +246,6 @@ function startJob() {
   y = (y + 1) % h2;
 }
 
-
-// function drawProgressInfo(){
-//   ctx.fillStyle = 'white';
-//   ctx.fillRect(20, h-40, 200, 20);
-//   ctx.fillStyle = 'black';
-//   ctx.textAlign = 'left';
-//   ctx.textBaseline = 'middle';
-//   ctx.fillText('y=' + y + ', yGoal=' + yGoal, 30, h - 30);
-// }
 
 function startJobs() {
   while (queueSize < queueLimit) {
