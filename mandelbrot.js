@@ -234,7 +234,7 @@ if (!workerCount)
 let workers = new Array(workerCount);
 let generation = 0;
 let queueSize = 0;
-let queueLimit = 64;
+let queueLimit = 2 * workerCount;
 let nextWorker = 0;
 
 
