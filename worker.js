@@ -51,7 +51,9 @@ function renderRowData(y) {
       data[p+3] = 255;
     } else {
       let zx2 = res[1], zy2 = res[2];
-      let f2 = fraction(zx2, zy2);
+      let sum = n + fraction(zx2, zy2);
+      n = Math.floor(sum);
+      let f2 = sum - n;
       let n1 = (n % 256) * 4;
       let f1 = 1.0 - f2;
       let n2 = ((n + 1) % 256) * 4;
