@@ -400,18 +400,19 @@ function handleDrag() {
   ymin -= dy * yscale;
   ymax -= dy * yscale;
   saveState();
+  ctx.globalAlpha = 1.0;
   ctx.drawImage(canvas, dx, dy);
   invalidate();
-  lastPos = drawPos;
+  lastPos = dragPos;
+  dragTimer = null;
 }
 
 canvas.addEventListener('mousemove', (e) => {
   e.preventDefault();
   if (isDepressed) {
-    if (dragTimer !== null)
-      clearTimeout(dragTimer);
-    dragTimer = setTimeout(handleDrag, 1);
     dragPos = getMousePosition(e);
+    if (dragTimer === null)
+      dragTimer = setTimeout(handleDrag, 20);
   }
 });
 
