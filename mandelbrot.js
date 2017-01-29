@@ -422,7 +422,7 @@ canvas.addEventListener('mouseleave', (e) => {
 
 canvas.addEventListener('wheel', function(e){
   if (e.deltaY)
-    zoom(getMousePosition(e), -0.1 * Math.sign(e.deltaY));
+    zoom(getMousePosition(e), Math.pow(0.95, e.deltaY) - 1);
 });
 
 function getAutoSteps() {
