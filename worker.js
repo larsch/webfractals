@@ -10,7 +10,6 @@ let generation = null;
 let id = null;
 let substep = null;
 
-
 const log2Inverse = 1.0 / Math.log(2.0);
 const logHalflog2Inverse = Math.log(0.5)*log2Inverse;
 const log = Math.log;
@@ -64,25 +63,38 @@ function renderRowData(y) {
   }
 }
 
-onmessage = function(e) {
+function handlePalette(e) {
+  palette = e.data;
+  onmessage = handleRow;
+}
+
+let rows = 0;
+
+function handleViewport(e) {
   let msg = e.data;
-  if (typeof msg == 'object') {
-    if (msg.palette) {
-      palette = msg.palette;
-      id = msg.id;
-    } else if (msg.steps) {
-      steps = msg.steps;
-      xmin = msg.xmin;
-      xscale = msg.xscale;
-      ymin = msg.ymin;
-      yscale = msg.yscale;
-      generation = msg.generation;
-      w = msg.w;
-      substep = msg.substep;
-      data = new Uint8ClampedArray(w * 4);
-    }
+  steps = msg[0];
+  generation = msg[1];
+  xmin = msg[2];
+  xscale = msg[3];
+  ymin = msg[4];
+  yscale = msg[5];
+  w = msg[6];
+  substep = msg[7];
+  data = new Uint8ClampedArray(w * 4);
+  onmessage = handleRow;
+  rows = 0;
+}
+
+function handleRow(e) {
+  let y = e.data;
+  if (y === null) {
+    onmessage = handleViewport;
   } else {
-    renderRowData(msg);
-    postMessage({y: msg, data: data, generation: generation, substep: substep});
+    let y = e.data;
+    renderRowData(y);
+    postMessage([y, data, generation, substep]);
+    rows += 1;
   }
-};
+}
+
+onmessage = handlePalette;

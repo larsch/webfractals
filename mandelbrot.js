@@ -237,26 +237,31 @@ function anim(t) {
 }
 
 let useWorkers = true;
-let workerCount = navigator.hardwareConcurrency * 2;
+let workerCount = 2 * navigator.hardwareConcurrency;
 if (!workerCount)
   workerCount = 8;
 let workers = new Array(workerCount);
 let generation = 0;
 let queueSize = 0;
-let queueLimit = 2 * workerCount;
+let queueLimit = 4 * workerCount;
 let nextWorker = 0;
 
-
 function handleMessage(e) {
-  let msg = e.data;
-  if (msg.generation == generation) {
-    if (msg.substep === 0) {
+  const msg = e.data;
+  const msgY = msg[0];
+  const msgData = msg[1];
+  const msgGeneration = msg[2];
+  const msgSubstep = msg[3];
+  if (msgGeneration == generation) {
+    if (msgSubstep === 0) {
+      // Draw first step directly to context
       ctx.globalAlpha = 1.0;
-      ctx.putImageData(new ImageData(msg.data, w, 1), 0, msg.y);
+      ctx.putImageData(new ImageData(msgData, w, 1), 0, msgY);
     } else {
-      offscreenCtx.putImageData(new ImageData(msg.data, w, 1), 0, 0);
-      ctx.globalAlpha = 1.0 / (msg.substep + 1);
-      ctx.drawImage(offscreenCanvas, 0, msg.y);
+      // Draw subpixel steps via offscreen canvas and apply with alpha
+      offscreenCtx.putImageData(new ImageData(msgData, w, 1), 0, 0);
+      ctx.globalAlpha = 1.0 / (msgSubstep + 1);
+      ctx.drawImage(offscreenCanvas, 0, msgY);
     }
     --remainingRows;
     if (showPerformance)
@@ -269,7 +274,7 @@ function handleMessage(e) {
 
 for (let i = 0; i < workerCount; ++i) {
   workers[i] = new Worker("./worker.js?" + Date.now());
-  workers[i].postMessage({palette: palette, id: i});
+  workers[i].postMessage(palette);
   workers[i].onmessage = handleMessage;
 }
 
@@ -309,7 +314,8 @@ function startJobs() {
       if (substep + 1 < substeps.length) {
         ++substep;
         let step = substeps[substep];
-        postAllWorkers({steps: steps, generation: generation, xmin: xmin + step[0] * xscale, xscale: xscale, ymin: ymin + step[0] * yscale, yscale: yscale, w: w, substep: substep});
+        postAllWorkers(null);
+        postAllWorkers([steps, generation, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, substep]);
       } else {
         renderInProgress = false;
         if (benchmarkMode) {
@@ -334,7 +340,8 @@ function startJobs() {
 function initRender() {
   ++generation;
   totalRows = remainingRows = h * substeps.length;
-  postAllWorkers({steps: steps, generation: generation, xmin: xmin, xscale: xscale, ymin: ymin, yscale: yscale, w: w, substep: 0});
+  postAllWorkers(null);
+  postAllWorkers([steps, generation, xmin, xscale, ymin, yscale, w, 0]);
 }
 
 function startRender() {
