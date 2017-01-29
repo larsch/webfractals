@@ -89,3 +89,17 @@ p {
     color: white;
     pointer-events: none;
 }
+
+.performance {
+    width: 400px;
+    height: 150px;
+    font-size: 8pt;
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    overflow-y: scroll;
+    z-index: 4;
+    background: rgba(0,0,0,0.50);
+    color: white;
+    display: none;
+}

@@ -14,6 +14,8 @@ progressCanvas.style.left = "20px";
 
 let benchmarkMode = false;
 let benchmarkRecord = null;
+let benchmarkSum = null;
+let benchmarkCount = null;
 let showPerformance = false;
 
 // viewport
@@ -101,8 +103,8 @@ function getZoom() {
 }
 
 function resize() {
-  let newWidth = benchmarkMode ? 800 : window.innerWidth;
-  let newHeight = benchmarkMode ? 600 : window.innerHeight;
+  let newWidth = benchmarkMode ? 1024 : window.innerWidth;
+  let newHeight = benchmarkMode ? 768 : window.innerHeight;
   if (w == newWidth && h == newHeight)
     return;
 
@@ -314,6 +316,13 @@ function startJobs() {
           let renderTime = Date.now() - renderStartTime;
           if (benchmarkRecord === null || renderTime < benchmarkRecord)
             benchmarkRecord = renderTime;
+          benchmarkSum += renderTime;
+          ++benchmarkCount;
+          let div = document.createElement("div");
+          div.textContent = renderTime + " msec, average " + Math.round(benchmarkSum / benchmarkCount) + ", min " + benchmarkRecord + " msec";
+          let perf = document.getElementById("performance");
+          perf.appendChild(div);
+          perf.scrollTo(0, perf.scrollHeight);
           invalidate();
         }
         break;
@@ -562,6 +571,19 @@ function toggleFullscreen() {
   }
 }
 
+function toggleBenchmark() {
+  benchmarkMode = !benchmarkMode;
+  benchmarkRecord = null;
+  benchmarkSum = 0;
+  benchmarkCount = 0;
+  let performance = document.getElementById("performance");
+  while (performance.firstChild)
+    performance.removeChild(performance.firstChild);
+  performance.style.display = benchmarkMode ? 'block' : 'none';
+  resize();
+  invalidate();
+}
+
 window.addEventListener('keypress', function(e){
   if (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
   if (e.key == 'f') {
@@ -577,10 +599,7 @@ window.addEventListener('keypress', function(e){
   } else if (e.key == 'a') {
     toggleAbout();
   } else if (e.key == 'b') {
-    benchmarkMode = !benchmarkMode;
-    benchmarkRecord = null;
-    resize();
-    invalidate();
+    toggleBenchmark();
   } else if (e.key == 'p') {
     togglePerformance();
   }
