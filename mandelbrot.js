@@ -376,12 +376,12 @@ function getMousePosition(ev) {
 }
 
 let isDepressed = false;
-let lx, ly;
+let lastPos = null;
 
 canvas.addEventListener('mousedown', (e) => {
   e.preventDefault();
   isDepressed = true;
-  [lx, ly] = getMousePosition(e);
+  lastPos = getMousePosition(e);
 });
 
 canvas.addEventListener('mouseup', (e) => {
@@ -393,8 +393,8 @@ canvas.addEventListener('mouseup', (e) => {
 let dragTimer = null;
 let dragPos = null;
 function handleDrag() {
-  let dx = dragPos[0] - lx;
-  let dy = dragPos[1] - ly;
+  let dx = dragPos[0] - lastPos[0];
+  let dy = dragPos[1] - lastPos[1];
   xmin -= dx * xscale;
   xmax -= dx * xscale;
   ymin -= dy * yscale;
@@ -402,8 +402,7 @@ function handleDrag() {
   saveState();
   ctx.drawImage(canvas, dx, dy);
   invalidate();
-  lx = dragPos[0];
-  ly = dragPos[1];
+  lastPos = drawPos;
 }
 
 canvas.addEventListener('mousemove', (e) => {
@@ -461,7 +460,10 @@ function zoom(pos, zoom) {
   if (style.display != zoomDisplay)
     style.display = zoomDisplay;
 
-  [xmin, xmax, ymin, ymax] = [xmin1, xmax1, ymin1, ymax1];
+  xmin = xmin1;
+  xmax = xmax1;
+  ymin = ymin1;
+  ymax = ymax1;
 
   // draw scaled image
   bgCtx.drawImage(canvas, 0, 0);
