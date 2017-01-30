@@ -421,9 +421,25 @@ canvas.addEventListener('mouseleave', (e) => {
   isDepressed = false;
 });
 
+let zoomTimer = null;
+let zoomDelta = 0;
+let zoomPosition = null;
+function handleZoom() {
+  console.log('zoom', zoomDelta, zoomPosition);
+  if (zoomDelta !== 0)
+    zoom(zoomPosition, Math.pow(0.9, zoomDelta) - 1.0);
+  zoomDelta = 0;
+  zoomTimer = null;
+}
+
 canvas.addEventListener('wheel', function(e){
-  if (e.deltaY)
-    zoom(getMousePosition(e), Math.pow(0.95, e.deltaY) - 1);
+  console.log(e.deltaY);
+  if (e.deltaY !== 0) {
+    zoomDelta += e.deltaY / Math.abs(e.deltaY);
+    zoomPosition = getMousePosition(e);
+    if (zoomTimer === null)
+       zoomTimer = setTimeout(handleZoom, 20);
+  }
 });
 
 function getAutoSteps() {
