@@ -243,7 +243,7 @@ if (!workerCount)
 let workers = new Array(workerCount);
 let generation = 0;
 let queueSize = 0;
-let queueLimit = 4 * workerCount;
+let queueLimit = 2 * workerCount;
 let nextWorker = 0;
 
 function handleMessage(e) {
