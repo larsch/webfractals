@@ -44,6 +44,10 @@ let substeps = [
   [0.25,-0.25]
 ];
 
+let toolbarHide = false;
+let toolbarHeight = 0;
+let toolbarVisible = true;
+
 function resetZoom() {
   let newAspect = w / h;
   xmin = -2.25;
@@ -414,6 +418,12 @@ canvas.addEventListener('mousemove', (e) => {
     if (dragTimer === null)
       dragTimer = setTimeout(handleDrag, 20);
   }
+  if (toolbarHide) {
+    if (e.clientY <= toolbarHeight)
+      showToolbar();
+    else
+      hideToolbar();
+  }
 });
 
 canvas.addEventListener('mouseleave', (e) => {
@@ -620,6 +630,10 @@ window.addEventListener('keypress', function(e){
   } else if (e.key == 'Tab') {
     e.preventDefault();
     toggleToolbar();
+    if (toolbarHide && toolbarVisible)
+      hideToolbar();
+    else if (!toolbarHide && !toolbarHide)
+      showToolbar();
   } else if (e.key == 'a') {
     toggleAbout();
   } else if (e.key == 'b') {
@@ -642,20 +656,29 @@ function toggleAbout() {
   }
 }
 
-let toolbarVisible = true;
+function showToolbar() {
+  if (toolbarVisible) return;
+  let elem = document.getElementById("toolbar");
+  elem.style.transitionTimingFunction = "ease-out";
+  elem.style.top = "0px";
+  toolbarVisible = true;
+}
+
+function hideToolbar() {
+  if (!toolbarVisible) return;
+  let elem = document.getElementById("toolbar");
+  elem.style.transitionTimingFunction = "ease-in";
+  elem.style.transition = "top 0.5s";
+  elem.style.top = - elem.clientHeight + "px";
+  toolbarHeight = elem.clientHeight;
+  toolbarVisible = false;
+}
 
 function toggleToolbar() {
   let elem = document.getElementById("toolbar");
   let eye = document.getElementById("eye");
-  if (toolbarVisible) {
-    elem.className = "toolbar toolbar-hidden";
-    eye.className = "fa fa-eye";
-    toolbarVisible = false;
-  } else {
-    elem.className = "toolbar";
-    eye.className = "fa fa-eye-slash";
-    toolbarVisible = true;
-  }
+  toolbarHide = !toolbarHide;
+  eye.className = toolbarHide ? "fa fa-eye-slash" : "fa fa-eye";
 }
 
 document.getElementById("close-about-button").addEventListener('click', (e) => {
