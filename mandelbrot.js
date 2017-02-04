@@ -34,6 +34,7 @@ let yscale;
 // rendering state
 let renderInProgress = false;
 let renderStartTime = null;
+let renderCompleteTime = null;
 let rowImage;
 let rowData;
 let y = 0;
@@ -188,6 +189,14 @@ function drawProgressTime(time) {
   progressCtx.fillText(time, 20, 20);
 }
 
+function getRenderingTime() {
+  if (remainingRows > 0) {
+    return Math.floor(performance.now() - renderStartTime);
+  } else {
+    return Math.floor(renderCompleteTime - renderStartTime);
+  }
+}
+
 function drawProgressWheel(progress) {
   progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
   progressCtx.fillStyle = "rgba(255,255,255,0.35)";
@@ -195,7 +204,7 @@ function drawProgressWheel(progress) {
   progressCtx.moveTo(20,20);
   progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
   progressCtx.fill();
-  drawProgressTime(Date.now() - renderStartTime);
+  drawProgressTime(getRenderingTime());
 }
 
 function drawProgress() {
@@ -205,16 +214,16 @@ function drawProgress() {
 
 function clearProgress() {
   progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
-  drawProgressTime(Date.now() - renderStartTime);
+  drawProgressTime(performance.now() - renderStartTime);
 }
 
 function anim(t) {
-  let renderEndTime = Date.now() + 25;
+  let renderEndTime = performance.now() + 25;
   let before = y;
   do {
     renderRow(y);
     y = (y + 1) % h2;
-  } while (y != yGoal && Date.now() < renderEndTime);
+  } while (y != yGoal && performance.now() < renderEndTime);
 
   if (y != yGoal) {
     drawProgress();
@@ -223,12 +232,12 @@ function anim(t) {
     clearProgress();
     renderInProgress = false;
   }
-  document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
+  document.getElementById("renderTime").textContent = performance.now() - renderStartTime;
 }
 
 function initializeWorkers() {
   for (let i = 0; i < workerCount; ++i) {
-    workers[i] = new Worker("./worker.js?" + Date.now());
+    workers[i] = new Worker("./worker.js?" + performance.now());
     workers[i].postMessage(palette);
     workers[i].onmessage = handleMessage;
   }
@@ -244,7 +253,8 @@ function drawRow(y, data, generation, subpixel) {
       ctx.globalAlpha = 1.0 / (subpixel + 1);
       ctx.drawImage(offscreenCanvas, 0, y);
     }
-    --remainingRows;
+    if (--remainingRows === 0)
+      renderCompleteTime = performance.now();
   }
 }
 
@@ -295,7 +305,7 @@ function startJobs() {
       } else {
         renderInProgress = false;
         if (benchmarkMode) {
-          let renderTime = Date.now() - renderStartTime;
+          let renderTime = performance.now() - renderStartTime;
           if (benchmarkRecord === null || renderTime < benchmarkRecord)
             benchmarkRecord = renderTime;
           benchmarkSum += renderTime;
@@ -342,7 +352,7 @@ function invalidate() {
     restartRender();
   else
     startRender();
-  renderStartTime = Date.now();
+  renderStartTime = performance.now();
 }
 
 function getAutoSteps() {
@@ -672,28 +682,22 @@ function toggleBenchmark() {
   invalidate();
 }
 
+const keyHandlers = {
+  'f': toggleFullscreen,
+  'Tab': toggleToolbar,
+  'a': toggleAbout,
+  'b': toggleBenchmark,
+  'p': togglePerformance,
+  'r': resetZoom,
+  'd': invalidate
+};
+
 window.addEventListener('keypress', function(e){
   if (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
-  if (e.key == 'f') {
-    toggleFullscreen();
-  } else if (e.key == 'r') {
-    resetZoom();
-  } else if  (e.key == 'w') {
-    useWorkers = !useWorkers;
-    invalidate();
-  } else if (e.key == 'Tab') {
+  let handler = keyHandlers[e.key];
+  if (handler) {
     e.preventDefault();
-    toggleToolbar();
-    if (autoHideToolbar && toolbarVisible)
-      hideToolbar();
-    else if (!autoHideToolbar && !autoHideToolbar)
-      showToolbar();
-  } else if (e.key == 'a') {
-    toggleAbout();
-  } else if (e.key == 'b') {
-    toggleBenchmark();
-  } else if (e.key == 'p') {
-    togglePerformance();
+    handler();
   }
 });
 
