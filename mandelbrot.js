@@ -4,7 +4,6 @@ let ctx = canvas.getContext("2d");
 let bgCtx = bgCanvas.getContext("2d");
 let progressCanvas = document.getElementById("progress");
 let progressCtx = progressCanvas.getContext("2d");
-
 let offscreenCanvas = document.getElementById("offscreen");
 let offscreenCtx = offscreenCanvas.getContext("2d");
 progressCanvas.width = 40;
@@ -31,22 +30,37 @@ let xsize = xmax - xmin;
 let ysize = ymax - ymin;
 let xscale;
 let yscale;
-let steps = 24;
-let substep = 0;
-let substeps = [
-  [0.0,0.0],
-  [0.5,0.5],
-  [0.5,0.0],
-  [0.0,0.5],
-  [0.25,0.25],
-  [-0.25,-0.25],
-  [-0.25,0.25],
-  [0.25,-0.25]
-];
 
-let toolbarHide = false;
-let toolbarHeight = 0;
-let toolbarVisible = true;
+// rendering state
+let renderInProgress = false;
+let renderStartTime = null;
+let rowImage;
+let rowData;
+let y = 0;
+let yGoal = 0;
+let steps = 24;
+
+let currentSubpixel = 0;
+const subpixelIntervals = 4;
+let subpixelOffsets = [];
+for (let y = 0; y < subpixelIntervals; ++y) {
+  for (let x = 0; x < subpixelIntervals; ++x) {
+    let n = y * 4 + x;
+    let p = (n * 7) % 16;
+    subpixelOffsets[p] = [x/subpixelIntervals, y/subpixelIntervals];
+  }
+}
+
+// worker management
+let useWorkers = true;
+let workerCount = 4 * (navigator.hardwareConcurrency || 4);
+let workers = new Array(workerCount);
+let generation = 0;
+let queueSize = 0;
+let queueLimit = 2 * workerCount;
+let nextWorker = 0;
+let remainingRows = 0;
+let totalRows = 0;
 
 function resetZoom() {
   let newAspect = w / h;
@@ -76,29 +90,6 @@ function setZoom(cx, cy, area) {
   steps = getAutoSteps();
 }
 
-function loadState() {
-  let hash = location.hash.substr(1);
-  let parts = hash.split(';');
-  let cx = null, cy = null, area = null;
-  for (let i = 0; i < parts.length; ++i) {
-    let part = parts[i];
-    let kv = part.split('=');
-    let key = kv[0];
-    let value = kv[1];
-    if (key == 'x') cx = parseFloat(value);
-    if (key == 'y') cy = parseFloat(value);
-    if (key == 'a') area = parseFloat(value);
-  }
-  if (cx !== null && cy !== null && area !== null) {
-    setZoom(cx, cy, area);
-  }
-}
-loadState();
-
-
-let rowImage;
-let rowData;
-
 function getZoom() {
   let cx = (xmin + xmax) / 2;
   let cy = (ymin + ymax) / 2;
@@ -127,6 +118,16 @@ function resize() {
   steps = getAutoSteps();
   saveState();
 
+  // find slice count and rendering height (multiple of 16)
+  bits = Math.ceil(Math.log(h) / Math.log(2));
+  h2 = 1 << bits;
+
+  // allocate new row image
+  rowImage = new ImageData(w, 1);
+  rowData = rowImage.data;
+
+  invalidate();
+
   // apply current overload to background
   bgCtx.drawImage(canvas, 0, 0);
   // resize front canvas (clears it)
@@ -146,20 +147,7 @@ function resize() {
   let def = hsv2rgb(0, 0.5, 0.5);
   bgCtx.fillStyle = "rgb(" + def[0] + "," + def[1] + "," + def[2] + ")";
   bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
-
-  // find slice count and rendering height (multiple of 16)
-  bits = Math.ceil(Math.log(h) / Math.log(2));
-  h2 = 1 << bits;
-  // allocate new row image
-  rowImage = new ImageData(w, 1);
-  rowData = rowImage.data;
-
-  invalidate();
 }
-
-let y = 0;
-let yGoal = 0;
-let renderInProgress = false;
 
 function hsv2rgb(h, s, v) {
   let hm = h / 60;
@@ -192,8 +180,6 @@ for (let i = 0; i < 256; i++) {
   palette[i*4+2] = rgb[2];
   palette[i*4+3] = 255;
 }
-
-let renderStartTime = null;
 
 function drawProgressTime(time) {
   progressCtx.fillStyle = 'white';
@@ -240,15 +226,13 @@ function anim(t) {
   document.getElementById("renderTime").textContent = Date.now() - renderStartTime;
 }
 
-let useWorkers = true;
-let workerCount = 2 * navigator.hardwareConcurrency;
-if (!workerCount)
-  workerCount = 8;
-let workers = new Array(workerCount);
-let generation = 0;
-let queueSize = 0;
-let queueLimit = 2 * workerCount;
-let nextWorker = 0;
+function initializeWorkers() {
+  for (let i = 0; i < workerCount; ++i) {
+    workers[i] = new Worker("./worker.js?" + Date.now());
+    workers[i].postMessage(palette);
+    workers[i].onmessage = handleMessage;
+  }
+}
 
 function handleMessage(e) {
   const msg = e.data;
@@ -276,16 +260,7 @@ function handleMessage(e) {
     startJobs();
 }
 
-for (let i = 0; i < workerCount; ++i) {
-  workers[i] = new Worker("./worker.js?" + Date.now());
-  workers[i].postMessage(palette);
-  workers[i].onmessage = handleMessage;
-}
-
-let remainingRows = 0;
-let totalRows = 0;
-
-function postAllWorkers(msg) {
+function broadcastMessage(msg) {
   for (let i = 0 ; i < workerCount; ++i)
     workers[i].postMessage(msg);
 }
@@ -301,25 +276,15 @@ function startJob() {
   y = (y + 1) % h2;
 }
 
-
-// function drawProgressInfo(){
-//   ctx.fillStyle = 'white';
-//   ctx.fillRect(20, h-40, 200, 20);
-//   ctx.fillStyle = 'black';
-//   ctx.textAlign = 'left';
-//   ctx.textBaseline = 'middle';
-//   ctx.fillText('y=' + y + ', yGoal=' + yGoal, 30, h - 30);
-// }
-
 function startJobs() {
   while (queueSize < queueLimit) {
     startJob();
     if (y == yGoal) {
-      if (substep + 1 < substeps.length) {
-        ++substep;
-        let step = substeps[substep];
-        postAllWorkers(null);
-        postAllWorkers([steps, generation, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, substep]);
+      if (currentSubpixel + 1 < subpixelOffsets.length) {
+        ++currentSubpixel;
+        let step = subpixelOffsets[currentSubpixel];
+        broadcastMessage(null);
+        broadcastMessage([steps, generation, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel]);
       } else {
         renderInProgress = false;
         if (benchmarkMode) {
@@ -343,9 +308,11 @@ function startJobs() {
 
 function initRender() {
   ++generation;
-  totalRows = remainingRows = h * substeps.length;
-  postAllWorkers(null);
-  postAllWorkers([steps, generation, xmin, xscale, ymin, yscale, w, 0]);
+  totalRows = remainingRows = h * subpixelOffsets.length;
+  currentSubpixel = 0;
+  broadcastMessage(null);
+  let offset = subpixelOffsets[currentSubpixel];
+  broadcastMessage([steps, generation, xmin + offset[0] * xscale, xscale, ymin + offset[1] * yscale, yscale, w, 0]);
 }
 
 function startRender() {
@@ -364,7 +331,6 @@ function restartRender() {
 }
 
 function invalidate() {
-  substep = 0;
   if (renderInProgress)
     restartRender();
   else
@@ -372,91 +338,12 @@ function invalidate() {
   renderStartTime = Date.now();
 }
 
-function getMousePosition(ev) {
-  var rect = canvas.getBoundingClientRect();
-  var mx = ev.clientX - rect.left;
-  var my = ev.clientY - rect.top;
-  return [mx, my];
-}
-
-let isDepressed = false;
-let lastPos = null;
-
-canvas.addEventListener('mousedown', (e) => {
-  e.preventDefault();
-  isDepressed = true;
-  lastPos = getMousePosition(e);
-});
-
-canvas.addEventListener('mouseup', (e) => {
-  e.preventDefault();
-  isDepressed = false;
-});
-
-
-let dragTimer = null;
-let dragPos = null;
-function handleDrag() {
-  let dx = dragPos[0] - lastPos[0];
-  let dy = dragPos[1] - lastPos[1];
-  xmin -= dx * xscale;
-  xmax -= dx * xscale;
-  ymin -= dy * yscale;
-  ymax -= dy * yscale;
-  saveState();
-  ctx.globalAlpha = 1.0;
-  ctx.drawImage(canvas, dx, dy);
-  invalidate();
-  lastPos = dragPos;
-  dragTimer = null;
-}
-
-canvas.addEventListener('mousemove', (e) => {
-  e.preventDefault();
-  if (isDepressed) {
-    dragPos = getMousePosition(e);
-    if (dragTimer === null)
-      dragTimer = setTimeout(handleDrag, 20);
-  }
-  if (toolbarHide) {
-    if (e.clientY <= toolbarHeight)
-      showToolbar();
-    else
-      hideToolbar();
-  }
-});
-
-canvas.addEventListener('mouseleave', (e) => {
-  e.preventDefault();
-  isDepressed = false;
-});
-
-let zoomTimer = null;
-let zoomDelta = 0;
-let zoomPosition = null;
-function handleZoom() {
-  if (zoomDelta !== 0)
-    zoom(zoomPosition, Math.pow(0.9, zoomDelta) - 1.0);
-  zoomDelta = 0;
-  zoomTimer = null;
-}
-
-canvas.addEventListener('wheel', function(e){
-  if (e.deltaY !== 0) {
-    zoomDelta += e.deltaY / Math.abs(e.deltaY);
-    zoomPosition = getMousePosition(e);
-    if (zoomTimer === null)
-       zoomTimer = setTimeout(handleZoom, 20);
-  }
-});
-
 function getAutoSteps() {
   var f = Math.sqrt(
-    0.001+2.0 * Math.min(
-      Math.abs(xsize),
-      Math.abs(ysize)));
+    0.001 + 2.0 * Math.min(Math.abs(xsize), Math.abs(ysize)));
   return Math.floor(223.0/f);
 }
+
 
 function zoom(pos, zoom) {
   let mx = pos[0];
@@ -490,13 +377,6 @@ function zoom(pos, zoom) {
   ymin = ymin1;
   ymax = ymax1;
 
-  // draw scaled image
-  bgCtx.drawImage(canvas, 0, 0);
-  bgCtx.translate(dx, dy);
-  bgCtx.scale(sx, sy);
-  bgCtx.drawImage(bgCanvas, 0, 0);
-  bgCtx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0,0,w,h);
 
   xsize = xsize1;
   ysize = ysize1;
@@ -507,7 +387,15 @@ function zoom(pos, zoom) {
 
   invalidate();
 
-  return false;
+  // scale current image
+  bgCtx.drawImage(canvas, 0, 0);
+  bgCtx.translate(dx, dy);
+  bgCtx.scale(sx, sy);
+  bgCtx.drawImage(bgCanvas, 0, 0);
+  bgCtx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0,0,w,h);
+
+  return;
 }
 
 function iter(cx, cy) {
@@ -542,12 +430,6 @@ function renderRowData(cy, xmin, xscale, w, rowData) {
   }
 }
 
-function saveState() {
-  let state = getZoom();
-  let cx = state[0], cy = state[1], sz = state[2];
-  location.hash = 'x=' + cx + ';y=' + cy + ';a=' + sz;
-}
-
 function rowMapping(y) {
   let v;
   for (let i = 0; i < bits; ++i) {
@@ -571,20 +453,185 @@ function renderRow(y) {
   }
 }
 
-// Handle window resizing (throttled)
-let resizeTimer = null;
-window.addEventListener("resize", function(e) {
-  if (resizeTimer !== null)
-    clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(function(){
-    resizeTimer = null;
-    resize();
-  }, 1);
+////////////////////////////////////////////////////////////////////
+// Toolbar
+////////////////////////////////////////////////////////////////////
+
+let autoHideToolbar = false;
+let toolbarHeight = 0;
+let toolbarVisible = true;
+
+function showToolbar() {
+  if (toolbarVisible) return;
+  let elem = document.getElementById("toolbar");
+  elem.style.transitionTimingFunction = "ease-out";
+  elem.style.top = "0px";
+  toolbarVisible = true;
+}
+
+function hideToolbar() {
+  if (!toolbarVisible) return;
+  let elem = document.getElementById("toolbar");
+  elem.style.transitionTimingFunction = "ease-in";
+  elem.style.transition = "top 0.5s";
+  elem.style.top = - elem.clientHeight + "px";
+  toolbarHeight = elem.clientHeight;
+  toolbarVisible = false;
+}
+
+function toggleToolbar() {
+  let elem = document.getElementById("toolbar");
+  let eye = document.getElementById("eye");
+  autoHideToolbar = !autoHideToolbar;
+  eye.className = autoHideToolbar ? "fa fa-eye-slash" : "fa fa-eye";
+}
+
+function getMousePosition(ev) {
+  var rect = canvas.getBoundingClientRect();
+  var mx = ev.clientX - rect.left;
+  var my = ev.clientY - rect.top;
+  return [mx, my];
+}
+
+////////////////////////////////////////////////////////////////////
+// Drag handling
+////////////////////////////////////////////////////////////////////
+
+let mouseIsPressed = false;
+let lastDragPos = null;
+let dragPos = null;
+let lastDrag = performance.now();
+function applyDrag() {
+  if (dragPos === null || lastDragPos === null) return;
+  let dx = dragPos[0] - lastDragPos[0];
+  let dy = dragPos[1] - lastDragPos[1];
+  if (dx === 0 && dy === 0) return;
+  xmin -= dx * xscale;
+  xmax -= dx * xscale;
+  ymin -= dy * yscale;
+  ymax -= dy * yscale;
+  saveState();
+  invalidate();
+  ctx.globalAlpha = 1.0;
+  ctx.drawImage(canvas, dx, dy);
+  lastDragPos = dragPos;
+}
+
+function handleMouseMove(ev) {
+  if (mouseIsPressed)
+    dragPos = getMousePosition(ev);
+  if (autoHideToolbar) {
+    if (ev.clientY <= toolbarHeight)
+      showToolbar();
+    else
+      hideToolbar();
+  }
+}
+
+function handleMouseLeave(ev) {
+  mouseIsPressed = false;
+  if (autoHideToolbar)
+    hideToolbar();
+}
+
+canvas.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  mouseIsPressed = true;
+  lastDragPos = getMousePosition(e);
 });
 
-canvas.focus();
+canvas.addEventListener('mouseup', (e) => {
+  e.preventDefault();
+  mouseIsPressed = false;
+});
 
-// Set initialize and kick off rendering
+addThrottledEventHandler(canvas, 'mousemove', handleMouseMove, applyDrag, 50);
+document.body.addEventListener('mouseleave', handleMouseLeave);
+
+//////////////////////////////////////////////////////////////////////////////
+// Mouse wheel zoom handling
+//////////////////////////////////////////////////////////////////////////////
+
+function loadState() {
+  let hash = location.hash.substr(1);
+  let parts = hash.split(';');
+  let cx = null, cy = null, area = null;
+  for (let i = 0; i < parts.length; ++i) {
+    let part = parts[i];
+    let kv = part.split('=');
+    let key = kv[0];
+    let value = kv[1];
+    if (key == 'x') cx = parseFloat(value);
+    if (key == 'y') cy = parseFloat(value);
+    if (key == 'a') area = parseFloat(value);
+  }
+  if (cx !== null && cy !== null && area !== null) {
+    setZoom(cx, cy, area);
+  }
+}
+
+function saveState() {
+  let state = getZoom();
+  let cx = state[0], cy = state[1], sz = state[2];
+  location.hash = 'x=' + cx + ';y=' + cy + ';a=' + sz;
+}
+
+loadState();
+
+//////////////////////////////////////////////////////////////////////////////
+// Mouse wheel zoom handling
+//////////////////////////////////////////////////////////////////////////////
+
+let zoomDelta = 0;
+let zoomPosition = null;
+
+/**
+ * Attach an event listener to an object. Invokes the handle()
+ * callback on every event, and the apply() handler eventually, but
+ * with at least 'delay' milliseconds between each invokation.
+ */
+function addThrottledEventHandler(elem, event, handle, apply, delay) {
+  let nextApply = performance.now();
+  let timerId = null;
+  function invokeApply() { apply(); timerId = null; }
+  elem.addEventListener(event, (ev) => {
+    if (handle !== null)
+      handle(ev);
+    let now = performance.now();
+    if (now < nextApply) {
+      if (timerId === null) {
+        timerId = setTimeout(invokeApply, nextApply - now);
+        nextApply += delay;
+      }
+    } else {
+      apply();
+      nextApply = now + delay;
+    }
+  });
+}
+
+function applyZoom() {
+  if (zoomDelta !== 0)
+    zoom(zoomPosition, Math.pow(0.9, zoomDelta) - 1.0);
+  zoomDelta = 0;
+}
+
+function handleWheelEvent(ev) {
+  if (ev.deltaY !== 0)
+    zoomDelta += ev.deltaY / Math.abs(ev.deltaY);
+  zoomPosition = getMousePosition(ev);
+}
+
+addThrottledEventHandler(canvas, 'wheel', handleWheelEvent, applyZoom, 50);
+
+//////////////////////////////////////////////////////////////////////////////
+// Window resizing
+//////////////////////////////////////////////////////////////////////////////
+
+addThrottledEventHandler(window, 'resize', null, resize, 100);
+
+canvas.focus();
+initializeWorkers();
 resize();
 
 function toggleFullscreen() {
@@ -630,9 +677,9 @@ window.addEventListener('keypress', function(e){
   } else if (e.key == 'Tab') {
     e.preventDefault();
     toggleToolbar();
-    if (toolbarHide && toolbarVisible)
+    if (autoHideToolbar && toolbarVisible)
       hideToolbar();
-    else if (!toolbarHide && !toolbarHide)
+    else if (!autoHideToolbar && !autoHideToolbar)
       showToolbar();
   } else if (e.key == 'a') {
     toggleAbout();
@@ -654,31 +701,6 @@ function toggleAbout() {
     elem.style.display = 'block';
     aboutVisible = true;
   }
-}
-
-function showToolbar() {
-  if (toolbarVisible) return;
-  let elem = document.getElementById("toolbar");
-  elem.style.transitionTimingFunction = "ease-out";
-  elem.style.top = "0px";
-  toolbarVisible = true;
-}
-
-function hideToolbar() {
-  if (!toolbarVisible) return;
-  let elem = document.getElementById("toolbar");
-  elem.style.transitionTimingFunction = "ease-in";
-  elem.style.transition = "top 0.5s";
-  elem.style.top = - elem.clientHeight + "px";
-  toolbarHeight = elem.clientHeight;
-  toolbarVisible = false;
-}
-
-function toggleToolbar() {
-  let elem = document.getElementById("toolbar");
-  let eye = document.getElementById("eye");
-  toolbarHide = !toolbarHide;
-  eye.className = toolbarHide ? "fa fa-eye-slash" : "fa fa-eye";
 }
 
 document.getElementById("close-about-button").addEventListener('click', (e) => {
