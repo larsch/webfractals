@@ -694,7 +694,6 @@ function togglePerformance() {
     progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
 }
 
-document.getElementById("redraw-button").addEventListener('click', invalidate);
 document.getElementById("reset-button").addEventListener('click', resetZoom);
 document.getElementById("fullscreen-button").addEventListener('click', toggleFullscreen);
 document.getElementById("about-button").addEventListener('click', toggleAbout);
