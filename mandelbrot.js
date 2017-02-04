@@ -71,7 +71,10 @@ function goto(cx, cy, area) {
 }
 
 function resetZoom() {
-  goto(-0.75, 0.0, 16.0);
+  if (juliaMode)
+    goto(0.0, 0.0, 16.0);
+  else
+    goto(-0.75, 0.0, 16.0);
 }
 
 function setZoom(cx, cy, area) {
@@ -607,6 +610,9 @@ function loadState() {
     if (key == 'x') cx = parseFloat(value);
     if (key == 'y') cy = parseFloat(value);
     if (key == 'a') area = parseFloat(value);
+    if (key == 'cx') { Cx = parseFloat(value); juliaMode = true; }
+    if (key == 'cy') { Cy = parseFloat(value); juliaMode = true; }
+    if (key == 'ca') { Carea = parseFloat(value); juliaMode = true; }
   }
   if (cx !== null && cy !== null && area !== null) {
     setZoom(cx, cy, area);
@@ -615,8 +621,13 @@ function loadState() {
 
 function saveState() {
   let state = getZoom();
-  let cx = state[0], cy = state[1], sz = state[2];
-  location.hash = 'x=' + cx + ';y=' + cy + ';a=' + sz;
+  let options = { x: state[0], y: state[1], a: state[2] };
+  if (juliaMode) {
+    options['cx'] = Cx;
+    options['cy'] = Cy;
+    options['ca'] = Carea;
+  }
+  history.replaceState('', '', '#' + Object.keys(options).map((k) => `${k}=${options[k]}`).join(';'));
 }
 
 loadState();

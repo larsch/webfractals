@@ -60,7 +60,7 @@ function renderRowData(y) {
   let cy = ymin + yscale * y;
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
-    let res = iterateFunction(cx, cy, cx, cy);
+    let res = iterateFunction(cx, cy);
     let n = res[0];
     let p = x * 4;
     if (n == steps) {
