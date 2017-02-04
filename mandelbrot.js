@@ -251,9 +251,8 @@ function drawRow(y, data, generation, subpixel) {
 let drawQueue = [];
 function animate(t) {
   let msg;
-  while ((msg = drawQueue.shift())) {
+  while ((msg = drawQueue.shift()))
     drawRow(msg[0], msg[1], msg[2], msg[3]);
-  }
   if (showPerformance)
     drawProgressWheel(remainingRows / totalRows);
   requestAnimationFrame(animate);
@@ -545,7 +544,7 @@ function handleMouseLeave(ev) {
 canvas.addEventListener('mousedown', (e) => {
   e.preventDefault();
   mouseIsPressed = true;
-  lastDragPos = getMousePosition(e);
+  dragPos = lastDragPos = getMousePosition(e);
 });
 
 canvas.addEventListener('mouseup', (e) => {
