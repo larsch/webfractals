@@ -74,6 +74,7 @@ let rows = 0;
 
 function handleViewport(e) {
   let msg = e.data;
+  if (msg === null) return;
   steps = msg[0];
   generation = msg[1];
   xmin = msg[2];

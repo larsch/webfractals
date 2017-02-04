@@ -42,12 +42,12 @@ let yGoal = 0;
 let steps = 24;
 
 let currentSubpixel = 0;
-const subpixelIntervals = 4;
+const subpixelIntervals = 3;
 let subpixelOffsets = [];
 for (let y = 0; y < subpixelIntervals; ++y) {
   for (let x = 0; x < subpixelIntervals; ++x) {
-    let n = y * 4 + x;
-    let p = (n * 7) % 16;
+    let n = y * subpixelIntervals + x;
+    let p = (n * 7) % (subpixelIntervals * subpixelIntervals);
     subpixelOffsets[p] = [x/subpixelIntervals, y/subpixelIntervals];
   }
 }
@@ -63,18 +63,15 @@ let nextWorker = 0;
 let remainingRows = 0;
 let totalRows = 0;
 
-function resetZoom() {
+function goto(cx, cy, area) {
   let newAspect = w / h;
-  xmin = -2.25;
-  xmax = 1.5;
-  ymin = 1.5;
-  ymax = -1.5;
-  let cx = (xmax + xmin) / 2;
-  let cy = (ymax + ymin) / 2;
-  let area = Math.abs((xmax - xmin) * (ymax - ymin));
   setZoom(cx, cy, area);
   saveState();
   invalidate();
+}
+
+function resetZoom() {
+  goto(-0.75, 0.0, 16.0);
 }
 
 function setZoom(cx, cy, area) {
@@ -293,33 +290,43 @@ function startJob() {
   y = (y + 1) % h2;
 }
 
+function startSubpixelPass() {
+  let step = subpixelOffsets[currentSubpixel];
+  broadcastMessage(null);
+  broadcastMessage([steps, currentGeneration, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel]);
+}
+
+function onRenderComplete() {
+  renderInProgress = false;
+  if (benchmarkMode) {
+    let renderTime = performance.now() - renderStartTime;
+    if (benchmarkRecord === null || renderTime < benchmarkRecord)
+      benchmarkRecord = renderTime;
+    benchmarkSum += renderTime;
+    ++benchmarkCount;
+    let div = document.createElement("div");
+    div.textContent = renderTime + " msec, average " + Math.round(benchmarkSum / benchmarkCount) + ", min " + benchmarkRecord + " msec";
+    let perf = document.getElementById("performance");
+    perf.appendChild(div);
+    perf.scrollTo(0, perf.scrollHeight);
+    invalidate();
+  }
+}
+
+function onPassComplete() {
+  if (currentSubpixel + 1 < subpixelOffsets.length) {
+    ++currentSubpixel;
+    startSubpixelPass();
+  } else {
+    onRenderComplete();
+  }
+}
+
 function startJobs() {
-  while (queueSize < queueLimit) {
+  while (renderInProgress && queueSize < queueLimit) {
     startJob();
-    if (y == yGoal) {
-      if (currentSubpixel + 1 < subpixelOffsets.length) {
-        ++currentSubpixel;
-        let step = subpixelOffsets[currentSubpixel];
-        broadcastMessage(null);
-        broadcastMessage([steps, currentGeneration, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel]);
-      } else {
-        renderInProgress = false;
-        if (benchmarkMode) {
-          let renderTime = performance.now() - renderStartTime;
-          if (benchmarkRecord === null || renderTime < benchmarkRecord)
-            benchmarkRecord = renderTime;
-          benchmarkSum += renderTime;
-          ++benchmarkCount;
-          let div = document.createElement("div");
-          div.textContent = renderTime + " msec, average " + Math.round(benchmarkSum / benchmarkCount) + ", min " + benchmarkRecord + " msec";
-          let perf = document.getElementById("performance");
-          perf.appendChild(div);
-          perf.scrollTo(0, perf.scrollHeight);
-          invalidate();
-        }
-        break;
-      }
-    }
+    if (y == yGoal)
+      onPassComplete();
   }
 }
 
@@ -328,8 +335,8 @@ function initRender() {
   totalRows = remainingRows = h * subpixelOffsets.length;
   currentSubpixel = 0;
   broadcastMessage(null);
-  let offset = subpixelOffsets[currentSubpixel];
-  broadcastMessage([steps, currentGeneration, xmin + offset[0] * xscale, xscale, ymin + offset[1] * yscale, yscale, w, 0]);
+  renderInProgress = true;
+  startSubpixelPass();
 }
 
 function startRender() {
@@ -339,7 +346,6 @@ function startRender() {
   } else {
     requestAnimationFrame(anim);
   }
-  renderInProgress = true;
 }
 
 function restartRender() {
@@ -689,7 +695,14 @@ const keyHandlers = {
   'b': toggleBenchmark,
   'p': togglePerformance,
   'r': resetZoom,
-  'd': invalidate
+  'd': invalidate,
+  '1': () => goto(-0.8095982407565278, 0.20644475195559692, 7.070788159271757e-21),
+  '2': () => goto(-1.2507228225085063, -0.012216480572110264, 4.56763840019647e-10),
+  '3': () => goto(-0.7500080414782041, -0.0023020099052026063, 1.836076329402399e-12),
+  '4': () => goto(-1.2584173216052297, -0.0434307591569108, 7.355699871595511e-14),
+  '5': () => goto(-1.2584173733157713, -0.04343074372030864, 1.5584579561386576e-19),
+  '6': () => goto(-1.7687321374923899, -0.0033593363507216766, 1.9263389078932266e-12),
+  '0': resetZoom
 };
 
 window.addEventListener('keypress', function(e){
