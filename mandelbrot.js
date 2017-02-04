@@ -55,7 +55,7 @@ for (let y = 0; y < subpixelIntervals; ++y) {
 let useWorkers = true;
 let workerCount = 4 * (navigator.hardwareConcurrency || 4);
 let workers = new Array(workerCount);
-let generation = 0;
+let currentGeneration = 0;
 let queueSize = 0;
 let queueLimit = 2 * workerCount;
 let nextWorker = 0;
@@ -234,28 +234,36 @@ function initializeWorkers() {
   }
 }
 
-function handleMessage(e) {
-  const msg = e.data;
-  const msgY = msg[0];
-  const msgData = msg[1];
-  const msgGeneration = msg[2];
-  const msgSubstep = msg[3];
-  if (msgGeneration == generation) {
-    if (msgSubstep === 0) {
-      // Draw first step directly to context
+function drawRow(y, data, generation, subpixel) {
+  if (generation == currentGeneration) {
+    if (subpixel === 0) {
       ctx.globalAlpha = 1.0;
-      ctx.putImageData(new ImageData(msgData, w, 1), 0, msgY);
+      ctx.putImageData(new ImageData(data, w, 1), 0, y);
     } else {
-      // Draw subpixel steps via offscreen canvas and apply with alpha
-      offscreenCtx.putImageData(new ImageData(msgData, w, 1), 0, 0);
-      ctx.globalAlpha = 1.0 / (msgSubstep + 1);
-      ctx.drawImage(offscreenCanvas, 0, msgY);
+      offscreenCtx.putImageData(new ImageData(data, w, 1), 0, 0);
+      ctx.globalAlpha = 1.0 / (subpixel + 1);
+      ctx.drawImage(offscreenCanvas, 0, y);
     }
     --remainingRows;
-    if (showPerformance)
-      drawProgressWheel(remainingRows / totalRows);
   }
+}
+
+let drawQueue = [];
+function animate(t) {
+  let msg;
+  while ((msg = drawQueue.shift())) {
+    drawRow(msg[0], msg[1], msg[2], msg[3]);
+  }
+  if (showPerformance)
+    drawProgressWheel(remainingRows / totalRows);
+  requestAnimationFrame(animate);
+}
+
+requestAnimationFrame(animate);
+
+function handleMessage(ev) {
   --queueSize;
+  drawQueue.push(ev.data);
   if (renderInProgress)
     startJobs();
 }
@@ -284,7 +292,7 @@ function startJobs() {
         ++currentSubpixel;
         let step = subpixelOffsets[currentSubpixel];
         broadcastMessage(null);
-        broadcastMessage([steps, generation, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel]);
+        broadcastMessage([steps, currentGeneration, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel]);
       } else {
         renderInProgress = false;
         if (benchmarkMode) {
@@ -307,12 +315,12 @@ function startJobs() {
 }
 
 function initRender() {
-  ++generation;
+  ++currentGeneration;
   totalRows = remainingRows = h * subpixelOffsets.length;
   currentSubpixel = 0;
   broadcastMessage(null);
   let offset = subpixelOffsets[currentSubpixel];
-  broadcastMessage([steps, generation, xmin + offset[0] * xscale, xscale, ymin + offset[1] * yscale, yscale, w, 0]);
+  broadcastMessage([steps, currentGeneration, xmin + offset[0] * xscale, xscale, ymin + offset[1] * yscale, yscale, w, 0]);
 }
 
 function startRender() {
