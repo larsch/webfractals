@@ -9,6 +9,7 @@ let data = null;
 let generation = null;
 let id = null;
 let substep = null;
+let Cx, Cy;
 
 const log2Inverse = 1.0 / Math.log(2.0);
 const logHalflog2Inverse = Math.log(0.5)*log2Inverse;
@@ -19,7 +20,7 @@ function fraction(zx2, zy2)
   return 5 - logHalflog2Inverse - log(log(zx2+zy2)) * log2Inverse;
 }
 
-function iter(cx, cy) {
+function mandelIter(cx, cy) {
   let zy = cy;
   let zx = cx;
   let n = 0;
@@ -37,11 +38,29 @@ function iter(cx, cy) {
   return [n, zx2, zy2];
 }
 
+function juliaIter(cx, cy) {
+  let zy = cy;
+  let zx = cx;
+  let n = 0;
+  let zx2, zy2;
+  while ((zx2 = zx * zx) + (zy2 = zy * zy) <= 4.0 && ++n < steps) {
+    zy = 2 * zx * zy + Cy;
+    zx = zx2 - zy2 + Cx;
+  }
+  for (let i = 0; i < 4; ++i) {
+    zy = 2 * zx * zy + Cy;
+    zx = zx2 - zy2 + Cx;
+    zx2 = zx * zx;
+    zy2 = zy * zy;
+  }
+  return [n, zx2, zy2];
+}
+
 function renderRowData(y) {
   let cy = ymin + yscale * y;
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
-    let res = iter(cx, cy);
+    let res = iterateFunction(cx, cy, cx, cy);
     let n = res[0];
     let p = x * 4;
     if (n == steps) {
@@ -83,6 +102,9 @@ function handleViewport(e) {
   yscale = msg[5];
   w = msg[6];
   substep = msg[7];
+  Cx = msg[8];
+  Cy = msg[9];
+  iterateFunction = (Cx === undefined) ? mandelIter : juliaIter;
   data = new Uint8ClampedArray(w * 4);
   onmessage = handleRow;
   rows = 0;

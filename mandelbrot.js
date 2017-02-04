@@ -292,8 +292,13 @@ function startJob() {
 
 function startSubpixelPass() {
   let step = subpixelOffsets[currentSubpixel];
+  let options = [steps, currentGeneration, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel];
+  if (juliaMode) {
+    options.push(Cx);
+    options.push(Cy);
+  }
   broadcastMessage(null);
-  broadcastMessage([steps, currentGeneration, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel]);
+  broadcastMessage(options);
 }
 
 function onRenderComplete() {
@@ -473,6 +478,21 @@ function renderRow(y) {
     let dnext = (h2 + yGoal - ny) % h2;
     if(dnext < dthis)
       ctx.putImageData(rowImage, 0, y2 ^ 1);
+  }
+}
+
+let juliaMode = false;
+let Cx, Cy, Carea;
+function toggleJulia() {
+  if (juliaMode) {
+    juliaMode = false;
+    goto(Cx, Cy, Carea);
+  } else {
+    juliaMode = true;
+    Cx = (xmax + xmin) / 2;
+    Cy = (ymax + ymin) / 2;
+    Carea = (xmax - xmin) * (ymax - ymin);
+    goto(0.0, 0.0, 16.0);
   }
 }
 
@@ -696,6 +716,7 @@ const keyHandlers = {
   'p': togglePerformance,
   'r': resetZoom,
   'd': invalidate,
+  'j': toggleJulia,
   '1': () => goto(-0.8095982407565278, 0.20644475195559692, 7.070788159271757e-21),
   '2': () => goto(-1.2507228225085063, -0.012216480572110264, 4.56763840019647e-10),
   '3': () => goto(-0.7500080414782041, -0.0023020099052026063, 1.836076329402399e-12),
@@ -740,6 +761,7 @@ function togglePerformance() {
     progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
 }
 
+document.getElementById("julia-button").addEventListener('click', toggleJulia);
 document.getElementById("reset-button").addEventListener('click', resetZoom);
 document.getElementById("fullscreen-button").addEventListener('click', toggleFullscreen);
 document.getElementById("about-button").addEventListener('click', toggleAbout);
