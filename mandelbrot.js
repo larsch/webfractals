@@ -424,7 +424,7 @@ function zoom(pos, zoom) {
     return;
 
   if (area < 1e-26 && !zoomNotified) {
-    notify("Zoom level reached");
+    notify("Zoom limit reached");
     zoomNotified = true;
   } else if (area > 1e-24) {
     zoomNotified = false;
