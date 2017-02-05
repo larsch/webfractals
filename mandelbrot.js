@@ -328,10 +328,15 @@ function onRenderComplete() {
     benchmarkSum += renderTime;
     ++benchmarkCount;
     let div = document.createElement("div");
-    div.textContent = renderTime + " msec, average " + Math.round(benchmarkSum / benchmarkCount) + ", min " + benchmarkRecord + " msec";
-    let perf = document.getElementById("performance");
-    perf.appendChild(div);
-    perf.scrollTo(0, perf.scrollHeight);
+    let average = benchmarkSum / benchmarkCount;
+    div.textContent =
+      Math.floor(renderTime) + " msec, average " +
+      Math.floor(Math.round(average)) +
+      ", min " + Math.floor(benchmarkRecord) + " msec" +
+      (localStorage['benchmarkReference'] ? " (" + Math.floor(average*100/localStorage['benchmarkReference']) + "%)" : "");
+    let perfLog = document.getElementById("perf-log");
+    perfLog.appendChild(div);
+    perfLog.scrollTop = perfLog.scrollHeight;
     invalidate();
   }
 }
@@ -726,10 +731,11 @@ function toggleBenchmark() {
   benchmarkRecord = null;
   benchmarkSum = 0;
   benchmarkCount = 0;
-  let performance = document.getElementById("performance");
-  while (performance.firstChild)
-    performance.removeChild(performance.firstChild);
-  performance.style.display = benchmarkMode ? 'block' : 'none';
+  let perfLog = document.getElementById("perf-log");
+  while (perfLog.firstChild)
+    perfLog.removeChild(perfLog.firstChild);
+  let perfWidget = document.getElementById("perf-widget");
+  perfWidget.style.display = benchmarkMode ? 'block' : 'none';
   resize();
   invalidate();
 }
@@ -794,3 +800,4 @@ document.getElementById("fullscreen-button").addEventListener('click', toggleFul
 document.getElementById("about-button").addEventListener('click', toggleAbout);
 document.getElementById("toolbar-button").addEventListener('click', toggleToolbar);
 document.getElementById("performance-button").addEventListener('click', togglePerformance);
+document.getElementById("perf-set-button").addEventListener('click', (e) => localStorage['benchmarkReference'] = (benchmarkCount > 0 ? benchmarkSum / benchmarkCount : null));
