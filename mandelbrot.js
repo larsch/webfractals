@@ -269,7 +269,7 @@ function drawRow(y, data, generation, subpixel) {
       ctx.drawImage(offscreenCanvas, 0, y);
     }
     if (--remainingRows === 0)
-      renderCompleteTime = performance.now();
+      onDrawingComplete();
   }
 }
 
@@ -319,8 +319,8 @@ function startSubpixelPass() {
   broadcastMessage(options);
 }
 
-function onRenderComplete() {
-  renderInProgress = false;
+function onDrawingComplete() {
+  renderCompleteTime = performance.now();
   if (benchmarkMode) {
     let renderTime = performance.now() - renderStartTime;
     if (benchmarkRecord === null || renderTime < benchmarkRecord)
@@ -339,6 +339,10 @@ function onRenderComplete() {
     perfLog.scrollTop = perfLog.scrollHeight;
     invalidate();
   }
+}
+
+function onRenderComplete() {
+  renderInProgress = false;
 }
 
 function onPassComplete() {
