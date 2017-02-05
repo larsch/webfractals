@@ -7,13 +7,13 @@
     <meta name="author" content="">
     <link rel="stylesheet" href="mandelbrot.css">
     <link rel="stylesheet" href="css/font-awesome.min.css">
-    <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.js"></script>
-        <![endif]-->
   </head>
   <body>
     <canvas id="offscreen" width="640" height="1"></canvas>
-    <canvas id="scaled" width="640" height="480"></canvas>
+    <canvas id="scaled" width="640" height="480">
+      This page requires support for the HTML5 canvas element, which
+      your browser doesn't.
+    </canvas>
     <canvas id="canvas" width="640" height="480"></canvas>
     <canvas id="progress"></canvas>
     <div id="toolbar" class="toolbar">
@@ -28,15 +28,14 @@
       <a id="close-about-button" href="#"><i class="fa fa-times" aria-hidden="true"></i></a>
       <p>Javascript Mandelbrot Toy - by Lars Christensen &lt;<a href="mailto:larsch@belunktum.dk">larsch@belunktum.dk</a>&gt;
       </p>
-      <p>Features:
-        <ul>
-          <li>Fast multi-core rendering using WebWorkers</li>
-          <li>Smooth zoom/resize used image scaling</li>
-          <li>Auto iteration limit</li>
-          <li>Smooth palette</li>
-          <li>Progressive sub-pixel rendering</li>
-        </ul>
-      </p>
+      <p>Features:</p>
+      <ul>
+        <li>Fast multi-core rendering using WebWorkers</li>
+        <li>Smooth zoom/resize used image scaling</li>
+        <li>Auto iteration limit</li>
+        <li>Smooth palette</li>
+        <li>Progressive sub-pixel rendering</li>
+      </ul>
     </div>
     <div id="zoom-limit">
       Zoom limit reached
