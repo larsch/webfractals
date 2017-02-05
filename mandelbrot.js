@@ -98,6 +98,22 @@ function getZoom() {
   return [cx, cy, area];
 }
 
+let makeImageData;
+try {
+  let array = new Uint8ClampedArray(4);
+  let img = new ImageData(array, 1, 1);
+  makeImageData = function(array, w, h) {
+    return new ImageData(array, w, h);
+  };
+} catch (e) {
+  // inefficient cludge for IE
+  makeImageData = function(array, w, h) {
+    let img = ctx.createImageData(w, h);
+    img.data.set(array);
+    return img;
+  };
+}
+
 function resize() {
   let newWidth = benchmarkMode ? 1024 : window.innerWidth;
   let newHeight = benchmarkMode ? 768 : window.innerHeight;
@@ -124,7 +140,7 @@ function resize() {
   h2 = 1 << bits;
 
   // allocate new row image
-  rowImage = new ImageData(w, 1);
+  rowImage = ctx.createImageData(w, 1);
   rowData = rowImage.data;
 
   invalidate();
@@ -246,9 +262,9 @@ function drawRow(y, data, generation, subpixel) {
   if (generation == currentGeneration) {
     if (subpixel === 0) {
       ctx.globalAlpha = 1.0;
-      ctx.putImageData(new ImageData(data, w, 1), 0, y);
+      ctx.putImageData(makeImageData(data, w, 1), 0, y);
     } else {
-      offscreenCtx.putImageData(new ImageData(data, w, 1), 0, 0);
+      offscreenCtx.putImageData(makeImageData(data, w, 1), 0, 0);
       ctx.globalAlpha = 1.0 / (subpixel + 1);
       ctx.drawImage(offscreenCanvas, 0, y);
     }
