@@ -1,5 +1,11 @@
 # JavaScript/HTML5 Canvas/Web Worker Mandelbrot Fractal Renderer
 
+## Live site:
+
+  * http://larsch.github.io/webfractals/
+
+## Description
+
 This project is a fast, fluid and smooth Mandelbrot fractal generator
 written entirely in JavaScript, utilising HTML5 Canvas for rendering,
 Web Worker for multi-core/concurrent processing and a fully
