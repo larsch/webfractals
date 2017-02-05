@@ -54,7 +54,7 @@ for (let y = 0; y < subpixelIntervals; ++y) {
 
 // worker management
 let useWorkers = true;
-let workerCount = 4 * (navigator.hardwareConcurrency || 4);
+let workerCount = (navigator.hardwareConcurrency || 4);
 let workers = new Array(workerCount);
 let currentGeneration = 0;
 let queueSize = 0;
