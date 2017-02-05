@@ -77,10 +77,10 @@ p {
     /* margin: 0px; */
 }
 
-#zoom-limit {
+.notification {
     font-size: 38pt;
     position: absolute;
-    top: 50%;
+    bottom: 18%;
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 4;

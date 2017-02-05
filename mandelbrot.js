@@ -87,7 +87,6 @@ function setZoom(cx, cy, area) {
   ymax = cy + ysize / 2;
   xscale = xsize / w;
   yscale = ysize / h;
-  document.getElementById("zoom-limit").style.display = (area < 1e-26) ? 'block' : 'none';
   steps = getAutoSteps();
 }
 
@@ -400,6 +399,7 @@ function getAutoSteps() {
   return Math.floor(223.0/f) + (juliaMode ? 200 : 25);
 }
 
+let zoomNotified = false;
 
 function zoom(pos, zoom) {
   let mx = pos[0];
@@ -423,16 +423,17 @@ function zoom(pos, zoom) {
   if (area < 1e-28)
     return;
 
-  let zoomDisplay = (area < 1e-26) ? 'block' : 'none';
-  let style = document.getElementById("zoom-limit").style;
-  if (style.display != zoomDisplay)
-    style.display = zoomDisplay;
+  if (area < 1e-26 && !zoomNotified) {
+    notify("Zoom level reached");
+    zoomNotified = true;
+  } else if (area > 1e-24) {
+    zoomNotified = false;
+  }
 
   xmin = xmin1;
   xmax = xmax1;
   ymin = ymin1;
   ymax = ymax1;
-
 
   xsize = xsize1;
   ysize = ysize1;
@@ -515,12 +516,14 @@ function toggleJulia() {
   if (juliaMode) {
     juliaMode = false;
     goto(Cx, Cy, Carea);
+    notify("Mandelbrot");
   } else {
     juliaMode = true;
     Cx = (xmax + xmin) / 2;
     Cy = (ymax + ymin) / 2;
     Carea = (xmax - xmin) * (ymax - ymin);
     goto(0.0, 0.0, 16.0);
+    notify("Julia");
   }
 }
 
@@ -704,6 +707,29 @@ function handleWheelEvent(ev) {
 addThrottledEventHandler(canvas, 'wheel', handleWheelEvent, applyZoom, 50);
 
 //////////////////////////////////////////////////////////////////////////////
+// Notification
+//////////////////////////////////////////////////////////////////////////////
+
+function notify(message) {
+  let elem = document.createElement("div");
+  elem.textContent = message;
+  elem.className = "notification";
+  elem.style.opacity = 0.0;
+  document.body.appendChild(elem);
+  elem.offsetWidth; // trigger reflow
+  elem.style.transitionTimingFunction = "ease-in";
+  elem.style.transition = "opacity 0.5s";
+  elem.style.opacity = 0.75;
+  setTimeout(function(){
+    elem.style.transition = "opacity 1.5s";
+    elem.style.opacity = 0.0;
+    elem.addEventListener('transitionend', function(){
+      document.body.removeChild(elem);
+    });
+  }, 1500);
+}
+
+//////////////////////////////////////////////////////////////////////////////
 // Window resizing
 //////////////////////////////////////////////////////////////////////////////
 
@@ -761,6 +787,11 @@ const keyHandlers = {
   '5': () => goto(-1.2584173733157713, -0.04343074372030864, 1.5584579561386576e-19),
   '6': () => goto(-1.7687321374923899, -0.0033593363507216766, 1.9263389078932266e-12),
   '7': () => goto(-0.7683215625255263, 0.10763553419258395, 2.5585128336826167e-8),
+  '8': () => goto(-1.192221953636638, 0.28975874758269526, 2.859831064836286e-17),
+  'ArrowRight': () => { Cx += 1e-3; saveState(); invalidate(); },
+  'ArrowLeft': () => { Cx -= 1e-3; saveState(); invalidate(); },
+  'ArrowUp': () => { Cy += 1e-3; saveState(); invalidate(); },
+  'ArrowDown': () => { Cy -= 1e-3; saveState(); invalidate(); },
   '0': resetZoom
 };
 
