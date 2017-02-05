@@ -232,7 +232,6 @@ function anim(t) {
     clearProgress();
     renderInProgress = false;
   }
-  document.getElementById("renderTime").textContent = performance.now() - renderStartTime;
 }
 
 function initializeWorkers() {
