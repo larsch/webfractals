@@ -394,6 +394,7 @@ function invalidate() {
 }
 
 function getAutoSteps() {
+  if (juliaMode) { return 8192; }
   var f = Math.sqrt(
     0.001 + 2.0 * Math.min(Math.abs(xsize), Math.abs(ysize)));
   return Math.floor(223.0/f) + (juliaMode ? 200 : 25);
