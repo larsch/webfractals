@@ -253,7 +253,7 @@ function initializeWorkers() {
   for (let i = 0; i < workerCount; ++i) {
     workers[i] = new Worker("./worker.js?" + performance.now());
     workers[i].postMessage(palette);
-    workers[i].onmessage = handleMessage;
+    workers[i].onmessage = handleMessageFromWorker;
   }
 }
 
@@ -272,7 +272,11 @@ function drawRow(y, data, generation, subpixel) {
   }
 }
 
+// Array of rows received from workers ready to be draw on the canvas
+// on the next animation frame
 let drawQueue = [];
+
+// Animation frame function
 function animate(t) {
   let msg;
   while ((msg = drawQueue.shift()))
@@ -284,11 +288,11 @@ function animate(t) {
 
 requestAnimationFrame(animate);
 
-function handleMessage(ev) {
+function handleMessageFromWorker(ev) {
   --queueSize;
   drawQueue.push(ev.data);
   if (renderInProgress)
-    startJobs();
+    startMoreJobs();
 }
 
 function broadcastMessage(msg) {
@@ -296,6 +300,8 @@ function broadcastMessage(msg) {
     workers[i].postMessage(msg);
 }
 
+// Request the next row to be drawn by sending a message to the next
+// worker.
 function startJob() {
   let y2 = rowMapping(y);
   if (y2 < h) {
@@ -309,7 +315,11 @@ function startJob() {
 
 function startSubpixelPass() {
   let step = subpixelOffsets[currentSubpixel];
-  let options = [steps, currentGeneration, xmin + step[0] * xscale, xscale, ymin + step[0] * yscale, yscale, w, currentSubpixel];
+  let options =
+      [ steps, currentGeneration,
+        xmin + step[0] * xscale, xscale,
+        ymin + step[0] * yscale, yscale,
+        w, currentSubpixel];
   if (juliaMode) {
     options.push(Cx);
     options.push(Cy);
@@ -332,7 +342,7 @@ function onDrawingComplete() {
       Math.floor(renderTime) + " msec, average " +
       Math.floor(Math.round(average)) +
       ", min " + Math.floor(benchmarkRecord) + " msec" +
-      (localStorage['benchmarkReference'] ? " (" + Math.floor(average*100/localStorage['benchmarkReference']) + "%)" : "");
+      (localStorage.benchmarkReference ? " (" + Math.floor(average*100/localStorage.benchmarkReference) + "%)" : "");
     let perfLog = document.getElementById("perf-log");
     perfLog.appendChild(div);
     perfLog.scrollTop = perfLog.scrollHeight;
@@ -353,7 +363,7 @@ function onPassComplete() {
   }
 }
 
-function startJobs() {
+function startMoreJobs() {
   while (renderInProgress && queueSize < queueLimit) {
     startJob();
     if (y == yGoal)
@@ -373,7 +383,7 @@ function initRender() {
 function startRender() {
   if (useWorkers) {
     initRender();
-    startJobs();
+    startMoreJobs();
   } else {
     requestAnimationFrame(anim);
   }
@@ -651,9 +661,9 @@ function saveState() {
   let state = getZoom();
   let options = { x: state[0], y: state[1], a: state[2] };
   if (juliaMode) {
-    options['cx'] = Cx;
-    options['cy'] = Cy;
-    options['ca'] = Carea;
+    options.cx = Cx;
+    options.cy = Cy;
+    options.ca = Carea;
   }
   history.replaceState('', '', '#' + Object.keys(options).map((k) => `${k}=${options[k]}`).join(';'));
 }
@@ -836,4 +846,4 @@ document.getElementById("fullscreen-button").addEventListener('click', toggleFul
 document.getElementById("about-button").addEventListener('click', toggleAbout);
 document.getElementById("toolbar-button").addEventListener('click', toggleToolbar);
 document.getElementById("performance-button").addEventListener('click', togglePerformance);
-document.getElementById("perf-set-button").addEventListener('click', (e) => localStorage['benchmarkReference'] = (benchmarkCount > 0 ? benchmarkSum / benchmarkCount : null));
+document.getElementById("perf-set-button").addEventListener('click', (e) => localStorage.benchmarkReference = (benchmarkCount > 0 ? benchmarkSum / benchmarkCount : null));

@@ -15,6 +15,8 @@ const log2Inverse = 1.0 / Math.log(2.0);
 const logHalflog2Inverse = Math.log(0.5)*log2Inverse;
 const log = Math.log;
 
+let iterateFunction = null;
+
 function fraction(zx2, zy2)
 {
   return 5 - logHalflog2Inverse - log(log(zx2+zy2)) * log2Inverse;
