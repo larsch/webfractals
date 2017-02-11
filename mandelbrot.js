@@ -657,6 +657,11 @@ function loadState() {
   }
 }
 
+window.addEventListener('hashchange', (ev) => {
+  loadState();
+  invalidate();
+});
+
 function saveState() {
   let state = getZoom();
   let options = { x: state[0], y: state[1], a: state[2] };
