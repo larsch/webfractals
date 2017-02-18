@@ -139,7 +139,6 @@ function resizeCanvas () {
   setZoom(zoom[0], zoom[1], zoom[2]);
 
   steps = getAutoSteps();
-  saveState();
 
   // find slice count and rendering height (multiple of 16)
   bits = Math.ceil(Math.log(h) / Math.log(2));
