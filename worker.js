@@ -12,17 +12,16 @@ let substep = null;
 let Cx, Cy;
 
 const log2Inverse = 1.0 / Math.log(2.0);
-const logHalflog2Inverse = Math.log(0.5)*log2Inverse;
+const logHalflog2Inverse = Math.log(0.5) * log2Inverse;
 const log = Math.log;
 
 let iterateFunction = null;
 
-function fraction(zx2, zy2)
-{
-  return 5 - logHalflog2Inverse - log(log(zx2+zy2)) * log2Inverse;
+function fraction (zx2, zy2) {
+  return 5 - logHalflog2Inverse - log(log(zx2 + zy2)) * log2Inverse;
 }
 
-function mandelIter(cx, cy) {
+function mandelIter (cx, cy) {
   let zy = cy;
   let zx = cx;
   let n = 0;
@@ -40,7 +39,7 @@ function mandelIter(cx, cy) {
   return [n, zx2, zy2];
 }
 
-function juliaIter(cx, cy) {
+function juliaIter (cx, cy) {
   let zy = cy;
   let zx = cx;
   let n = 0;
@@ -58,7 +57,7 @@ function juliaIter(cx, cy) {
   return [n, zx2, zy2];
 }
 
-function renderRowData(y) {
+function renderRowData (y) {
   let cy = ymin + yscale * y;
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
@@ -66,10 +65,10 @@ function renderRowData(y) {
     let n = res[0];
     let p = x * 4;
     if (n == steps) {
-      data[p+0] = 0;
-      data[p+1] = 0;
-      data[p+2] = 0;
-      data[p+3] = 255;
+      data[p + 0] = 0;
+      data[p + 1] = 0;
+      data[p + 2] = 0;
+      data[p + 3] = 255;
     } else {
       let zx2 = res[1], zy2 = res[2];
       let sum = n + fraction(zx2, zy2);
@@ -78,22 +77,22 @@ function renderRowData(y) {
       let n1 = (n % 256) * 4;
       let f1 = 1.0 - f2;
       let n2 = ((n + 1) % 256) * 4;
-      data[p+0] = f1 * palette[n1+0] + f2 * palette[n2+0];
-      data[p+1] = f1 * palette[n1+1] + f2 * palette[n2+1];
-      data[p+2] = f1 * palette[n1+2] + f2 * palette[n2+2];
-      data[p+3] = 255;
+      data[p + 0] = f1 * palette[n1 + 0] + f2 * palette[n2 + 0];
+      data[p + 1] = f1 * palette[n1 + 1] + f2 * palette[n2 + 1];
+      data[p + 2] = f1 * palette[n1 + 2] + f2 * palette[n2 + 2];
+      data[p + 3] = 255;
     }
   }
 }
 
-function handlePalette(e) {
+function handlePalette (e) {
   palette = e.data;
   onmessage = handleRow;
 }
 
 let rows = 0;
 
-function handleViewport(e) {
+function handleViewport (e) {
   let msg = e.data;
   if (msg === null) return;
   steps = msg[0];
@@ -112,7 +111,7 @@ function handleViewport(e) {
   rows = 0;
 }
 
-function handleRow(e) {
+function handleRow (e) {
   let y = e.data;
   if (y === null) {
     onmessage = handleViewport;

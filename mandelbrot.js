@@ -1,15 +1,15 @@
-let canvas = document.getElementById("canvas");
-let bgCanvas = document.getElementById("scaled");
-let ctx = canvas.getContext("2d");
-let bgCtx = bgCanvas.getContext("2d");
-let progressCanvas = document.getElementById("progress");
-let progressCtx = progressCanvas.getContext("2d");
-let offscreenCanvas = document.getElementById("offscreen");
-let offscreenCtx = offscreenCanvas.getContext("2d");
+let canvas = document.getElementById('canvas');
+let bgCanvas = document.getElementById('scaled');
+let ctx = canvas.getContext('2d');
+let bgCtx = bgCanvas.getContext('2d');
+let progressCanvas = document.getElementById('progress');
+let progressCtx = progressCanvas.getContext('2d');
+let offscreenCanvas = document.getElementById('offscreen');
+let offscreenCtx = offscreenCanvas.getContext('2d');
 progressCanvas.width = 40;
 progressCanvas.height = 40;
-progressCanvas.style.top = "20px";
-progressCanvas.style.left = "20px";
+progressCanvas.style.top = '20px';
+progressCanvas.style.left = '20px';
 
 let benchmarkMode = false;
 let benchmarkRecord = null;
@@ -48,7 +48,7 @@ for (let y = 0; y < subpixelIntervals; ++y) {
   for (let x = 0; x < subpixelIntervals; ++x) {
     let n = y * subpixelIntervals + x;
     let p = (n * 7) % (subpixelIntervals * subpixelIntervals);
-    subpixelOffsets[p] = [x/subpixelIntervals, y/subpixelIntervals];
+    subpixelOffsets[p] = [x / subpixelIntervals, y / subpixelIntervals];
   }
 }
 
@@ -63,21 +63,22 @@ let nextWorker = 0;
 let remainingRows = 0;
 let totalRows = 0;
 
-function goto(cx, cy, area) {
+function goto (cx, cy, area) {
   let newAspect = w / h;
   setZoom(cx, cy, area);
   saveState();
   invalidate();
 }
 
-function resetZoom() {
-  if (juliaMode)
+function resetZoom () {
+  if (juliaMode) {
     goto(0.0, 0.0, 16.0);
-  else
+  } else {
     goto(-0.75, 0.0, 16.0);
+  }
 }
 
-function setZoom(cx, cy, area) {
+function setZoom (cx, cy, area) {
   let aspect = w / h;
   xsize = Math.sqrt(area * aspect);
   ysize = xsize / aspect;
@@ -90,7 +91,7 @@ function setZoom(cx, cy, area) {
   steps = getAutoSteps();
 }
 
-function getZoom() {
+function getZoom () {
   let cx = (xmin + xmax) / 2;
   let cy = (ymin + ymax) / 2;
   let area = xsize * ysize;
@@ -101,31 +102,32 @@ let makeImageData;
 try {
   let array = new Uint8ClampedArray(4);
   let img = new ImageData(array, 1, 1);
-  makeImageData = function(array, w, h) {
+  makeImageData = function (array, w, h) {
     return new ImageData(array, w, h);
   };
 } catch (e) {
   // inefficient cludge for IE
-  makeImageData = function(array, w, h) {
+  makeImageData = function (array, w, h) {
     let img = ctx.createImageData(w, h);
     img.data.set(array);
     return img;
   };
 }
 
-function resize() {
+function resize () {
   let newWidth = benchmarkMode ? 1024 : window.innerWidth;
   let newHeight = benchmarkMode ? 768 : window.innerHeight;
-  if (w == newWidth && h == newHeight)
+  if (w == newWidth && h == newHeight) {
     return;
+  }
 
   w = newWidth;
   h = newHeight;
 
   let oldxscale = xscale,
-      oldyscale = yscale,
-      oldxmin = xmin,
-      oldymin = ymin;
+    oldyscale = yscale,
+    oldxmin = xmin,
+    oldymin = ymin;
 
   // adjust viewport, keeping area and centre constant
   let zoom = getZoom();
@@ -161,11 +163,11 @@ function resize() {
   offscreenCanvas.width = w;
 
   let def = hsv2rgb(0, 0.5, 0.5);
-  bgCtx.fillStyle = "rgb(" + def[0] + "," + def[1] + "," + def[2] + ")";
-  bgCtx.fillRect(0,0,bgCanvas.width,bgCanvas.height);
+  bgCtx.fillStyle = 'rgb(' + def[0] + ',' + def[1] + ',' + def[2] + ')';
+  bgCtx.fillRect(0, 0, bgCanvas.width, bgCanvas.height);
 }
 
-function hsv2rgb(h, s, v) {
+function hsv2rgb (h, s, v) {
   let hm = h / 60;
   let c = v * s;
   let x = c * (1 - Math.abs(hm % 2 - 1));
@@ -191,20 +193,20 @@ for (let i = 0; i < 256; i++) {
   let v = 0.6 + 0.3 * Math.sin(i / 16 * Math.PI);
   let s = 0.75 + 0.23 * Math.cos(i / 8 * Math.PI);
   let rgb = hsv2rgb(h, s, v);
-  palette[i*4+0] = rgb[0];
-  palette[i*4+1] = rgb[1];
-  palette[i*4+2] = rgb[2];
-  palette[i*4+3] = 255;
+  palette[i * 4 + 0] = rgb[0];
+  palette[i * 4 + 1] = rgb[1];
+  palette[i * 4 + 2] = rgb[2];
+  palette[i * 4 + 3] = 255;
 }
 
-function drawProgressTime(time) {
+function drawProgressTime (time) {
   progressCtx.fillStyle = 'white';
   progressCtx.textAlign = 'center';
   progressCtx.textBaseline = 'middle';
   progressCtx.fillText(time, 20, 20);
 }
 
-function getRenderingTime() {
+function getRenderingTime () {
   if (remainingRows > 0) {
     return Math.floor(performance.now() - renderStartTime);
   } else {
@@ -212,27 +214,27 @@ function getRenderingTime() {
   }
 }
 
-function drawProgressWheel(progress) {
-  progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
-  progressCtx.fillStyle = "rgba(255,255,255,0.35)";
+function drawProgressWheel (progress) {
+  progressCtx.clearRect(0, 0, progressCanvas.width, progressCanvas.height);
+  progressCtx.fillStyle = 'rgba(255,255,255,0.35)';
   progressCtx.beginPath();
-  progressCtx.moveTo(20,20);
-  progressCtx.arc(20,20,16,3/2*Math.PI,3/2*Math.PI - 2 * Math.PI * progress, true);
+  progressCtx.moveTo(20, 20);
+  progressCtx.arc(20, 20, 16, 3 / 2 * Math.PI, 3 / 2 * Math.PI - 2 * Math.PI * progress, true);
   progressCtx.fill();
   drawProgressTime(getRenderingTime());
 }
 
-function drawProgress() {
+function drawProgress () {
   let progress = remainingRows / totalRows;
   drawProgressWheel(progress);
 }
 
-function clearProgress() {
-  progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
+function clearProgress () {
+  progressCtx.clearRect(0, 0, progressCanvas.width, progressCanvas.height);
   drawProgressTime(performance.now() - renderStartTime);
 }
 
-function anim(t) {
+function anim (t) {
   let renderEndTime = performance.now() + 25;
   let before = y;
   do {
@@ -249,15 +251,15 @@ function anim(t) {
   }
 }
 
-function initializeWorkers() {
+function initializeWorkers () {
   for (let i = 0; i < workerCount; ++i) {
-    workers[i] = new Worker("./worker.js?" + performance.now());
+    workers[i] = new Worker('./worker.js?' + performance.now());
     workers[i].postMessage(palette);
     workers[i].onmessage = handleMessageFromWorker;
   }
 }
 
-function drawRow(y, data, generation, subpixel) {
+function drawRow (y, data, generation, subpixel) {
   if (generation == currentGeneration) {
     if (subpixel === 0) {
       ctx.globalAlpha = 1.0;
@@ -267,8 +269,9 @@ function drawRow(y, data, generation, subpixel) {
       ctx.globalAlpha = 1.0 / (subpixel + 1);
       ctx.drawImage(offscreenCanvas, 0, y);
     }
-    if (--remainingRows === 0)
+    if (--remainingRows === 0) {
       onDrawingComplete();
+    }
   }
 }
 
@@ -277,32 +280,34 @@ function drawRow(y, data, generation, subpixel) {
 let drawQueue = [];
 
 // Animation frame function
-function animate(t) {
+function animate (t) {
   let msg;
-  while ((msg = drawQueue.shift()))
-    drawRow(msg[0], msg[1], msg[2], msg[3]);
-  if (showPerformance)
+  while ((msg = drawQueue.shift())) { drawRow(msg[0], msg[1], msg[2], msg[3]); }
+  if (showPerformance) {
     drawProgressWheel(remainingRows / totalRows);
+  }
   requestAnimationFrame(animate);
 }
 
 requestAnimationFrame(animate);
 
-function handleMessageFromWorker(ev) {
+function handleMessageFromWorker (ev) {
   --queueSize;
   drawQueue.push(ev.data);
-  if (renderInProgress)
+  if (renderInProgress) {
     startMoreJobs();
+  }
 }
 
-function broadcastMessage(msg) {
-  for (let i = 0 ; i < workerCount; ++i)
+function broadcastMessage (msg) {
+  for (let i = 0; i < workerCount; ++i) {
     workers[i].postMessage(msg);
+  }
 }
 
 // Request the next row to be drawn by sending a message to the next
 // worker.
-function startJob() {
+function startJob () {
   let y2 = rowMapping(y);
   if (y2 < h) {
     let cy = ymin + yscale * y2;
@@ -313,13 +318,13 @@ function startJob() {
   y = (y + 1) % h2;
 }
 
-function startSubpixelPass() {
+function startSubpixelPass () {
   let step = subpixelOffsets[currentSubpixel];
   let options =
-      [ steps, currentGeneration,
-        xmin + step[0] * xscale, xscale,
-        ymin + step[0] * yscale, yscale,
-        w, currentSubpixel];
+    [ steps, currentGeneration,
+      xmin + step[0] * xscale, xscale,
+      ymin + step[0] * yscale, yscale,
+      w, currentSubpixel];
   if (juliaMode) {
     options.push(Cx);
     options.push(Cy);
@@ -328,33 +333,34 @@ function startSubpixelPass() {
   broadcastMessage(options);
 }
 
-function onDrawingComplete() {
+function onDrawingComplete () {
   renderCompleteTime = performance.now();
   if (benchmarkMode) {
     let renderTime = performance.now() - renderStartTime;
-    if (benchmarkRecord === null || renderTime < benchmarkRecord)
+    if (benchmarkRecord === null || renderTime < benchmarkRecord) {
       benchmarkRecord = renderTime;
+    }
     benchmarkSum += renderTime;
     ++benchmarkCount;
-    let div = document.createElement("div");
+    let div = document.createElement('div');
     let average = benchmarkSum / benchmarkCount;
     div.textContent =
-      Math.floor(renderTime) + " msec, average " +
+      Math.floor(renderTime) + ' msec, average ' +
       Math.floor(Math.round(average)) +
-      ", min " + Math.floor(benchmarkRecord) + " msec" +
-      (localStorage.benchmarkReference ? " (" + Math.floor(average*100/localStorage.benchmarkReference) + "%)" : "");
-    let perfLog = document.getElementById("perf-log");
+      ', min ' + Math.floor(benchmarkRecord) + ' msec' +
+      (localStorage.benchmarkReference ? ' (' + Math.floor(average * 100 / localStorage.benchmarkReference) + '%)' : '');
+    let perfLog = document.getElementById('perf-log');
     perfLog.appendChild(div);
     perfLog.scrollTop = perfLog.scrollHeight;
     invalidate();
   }
 }
 
-function onRenderComplete() {
+function onRenderComplete () {
   renderInProgress = false;
 }
 
-function onPassComplete() {
+function onPassComplete () {
   if (currentSubpixel + 1 < subpixelOffsets.length) {
     ++currentSubpixel;
     startSubpixelPass();
@@ -363,15 +369,16 @@ function onPassComplete() {
   }
 }
 
-function startMoreJobs() {
+function startMoreJobs () {
   while (renderInProgress && queueSize < queueLimit) {
     startJob();
-    if (y == yGoal)
+    if (y == yGoal) {
       onPassComplete();
+    }
   }
 }
 
-function initRender() {
+function initRender () {
   ++currentGeneration;
   totalRows = remainingRows = h * subpixelOffsets.length;
   currentSubpixel = 0;
@@ -380,7 +387,7 @@ function initRender() {
   startSubpixelPass();
 }
 
-function startRender() {
+function startRender () {
   if (useWorkers) {
     initRender();
     startMoreJobs();
@@ -389,29 +396,30 @@ function startRender() {
   }
 }
 
-function restartRender() {
+function restartRender () {
   yGoal = y; // keep going
   initRender();
 }
 
-function invalidate() {
-  if (renderInProgress)
+function invalidate () {
+  if (renderInProgress) {
     restartRender();
-  else
+  } else {
     startRender();
+  }
   renderStartTime = performance.now();
 }
 
-function getAutoSteps() {
+function getAutoSteps () {
   if (juliaMode) { return 8192; }
   var f = Math.sqrt(
     0.001 + 2.0 * Math.min(Math.abs(xsize), Math.abs(ysize)));
-  return Math.floor(223.0/f) + (juliaMode ? 200 : 25);
+  return Math.floor(223.0 / f) + (juliaMode ? 200 : 25);
 }
 
 let zoomNotified = false;
 
-function zoom(pos, zoom) {
+function zoom (pos, zoom) {
   let mx = pos[0];
   let my = pos[1];
 
@@ -430,11 +438,10 @@ function zoom(pos, zoom) {
   const dy = my - my * sy;
 
   let area = xsize1 * ysize1;
-  if (area < 1e-28)
-    return;
+  if (area < 1e-28) { return; }
 
   if (area < 1e-26 && !zoomNotified) {
-    notify("Zoom limit reached");
+    notify('Zoom limit reached');
     zoomNotified = true;
   } else if (area > 1e-24) {
     zoomNotified = false;
@@ -460,12 +467,12 @@ function zoom(pos, zoom) {
   bgCtx.scale(sx, sy);
   bgCtx.drawImage(bgCanvas, 0, 0);
   bgCtx.setTransform(1, 0, 0, 1, 0, 0);
-  ctx.clearRect(0,0,w,h);
+  ctx.clearRect(0, 0, w, h);
 
   return;
 }
 
-function iter(cx, cy) {
+function iter (cx, cy) {
   let zy = cy;
   let zx = cx;
   let n = 0;
@@ -477,27 +484,27 @@ function iter(cx, cy) {
   return n;
 }
 
-function renderRowData(cy, xmin, xscale, w, rowData) {
+function renderRowData (cy, xmin, xscale, w, rowData) {
   for (let x = 0; x < w; ++x) {
     let cx = xmin + xscale * x;
     let n = iter(cx, cy);
     let p = x * 4;
     if (n == steps) {
-      rowData[p+0] = 0;
-      rowData[p+1] = 0;
-      rowData[p+2] = 0;
-      rowData[p+3] = 255;
+      rowData[p + 0] = 0;
+      rowData[p + 1] = 0;
+      rowData[p + 2] = 0;
+      rowData[p + 3] = 255;
     } else {
       n = (n % 256) * 4;
-      rowData[p+0] = palette[n+0];
-      rowData[p+1] = palette[n+1];
-      rowData[p+2] = palette[n+2];
-      rowData[p+3] = palette[n+3];
+      rowData[p + 0] = palette[n + 0];
+      rowData[p + 1] = palette[n + 1];
+      rowData[p + 2] = palette[n + 2];
+      rowData[p + 3] = palette[n + 3];
     }
   }
 }
 
-function rowMapping(y) {
+function rowMapping (y) {
   let v;
   for (let i = 0; i < bits; ++i) {
     v = (v << 1) | (y & 1);
@@ -506,7 +513,7 @@ function rowMapping(y) {
   return v;
 }
 
-function renderRow(y) {
+function renderRow (y) {
   let y2 = rowMapping(y);
   if (y2 < h) {
     let cy = ymin + yscale * y2;
@@ -515,77 +522,78 @@ function renderRow(y) {
     let ny = rowMapping(y2 ^ 1);
     let dthis = (h2 + yGoal - y) % h2;
     let dnext = (h2 + yGoal - ny) % h2;
-    if(dnext < dthis)
+    if (dnext < dthis) {
       ctx.putImageData(rowImage, 0, y2 ^ 1);
+    }
   }
 }
 
 let juliaMode = false;
 let Cx, Cy, Carea;
-function toggleJulia() {
+function toggleJulia () {
   if (juliaMode) {
     juliaMode = false;
     goto(Cx, Cy, Carea);
-    notify("Mandelbrot");
+    notify('Mandelbrot');
   } else {
     juliaMode = true;
     Cx = (xmax + xmin) / 2;
     Cy = (ymax + ymin) / 2;
     Carea = (xmax - xmin) * (ymax - ymin);
     goto(0.0, 0.0, 16.0);
-    notify("Julia");
+    notify('Julia');
   }
 }
 
-////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////
 // Toolbar
-////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////
 
 let autoHideToolbar = false;
 let toolbarHeight = 0;
 let toolbarVisible = true;
 
-function showToolbar() {
+function showToolbar () {
   if (toolbarVisible) return;
-  let elem = document.getElementById("toolbar");
-  elem.style.transitionTimingFunction = "ease-out";
-  elem.style.top = "0px";
+  let elem = document.getElementById('toolbar');
+  elem.style.transitionTimingFunction = 'ease-out';
+  elem.style.top = '0px';
   toolbarVisible = true;
 }
 
-function hideToolbar() {
+function hideToolbar () {
   if (!toolbarVisible) return;
-  let elem = document.getElementById("toolbar");
-  elem.style.transitionTimingFunction = "ease-in";
-  elem.style.transition = "top 0.5s";
-  elem.style.top = - elem.clientHeight + "px";
+  let elem = document.getElementById('toolbar');
+  elem.style.transitionTimingFunction = 'ease-in';
+  elem.style.transition = 'top 0.5s';
+  elem.style.top = -elem.clientHeight + 'px';
   toolbarHeight = elem.clientHeight;
   toolbarVisible = false;
 }
 
-function toggleToolbar() {
-  let elem = document.getElementById("toolbar");
-  let eye = document.getElementById("eye");
+function toggleToolbar () {
+  let elem = document.getElementById('toolbar');
+  let eye = document.getElementById('eye');
   autoHideToolbar = !autoHideToolbar;
-  eye.className = autoHideToolbar ? "fa fa-eye-slash" : "fa fa-eye";
+  eye.className = autoHideToolbar ? 'fa fa-eye-slash' : 'fa fa-eye';
 }
 
-function getMousePosition(ev) {
+function getMousePosition (ev) {
   var rect = canvas.getBoundingClientRect();
   var mx = ev.clientX - rect.left;
   var my = ev.clientY - rect.top;
   return [mx, my];
 }
 
-////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////
 // Drag handling
-////////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////////////////////////////
 
 let mouseIsPressed = false;
 let lastDragPos = null;
 let dragPos = null;
 let lastDrag = performance.now();
-function applyDrag() {
+function applyDrag () {
   if (dragPos === null || lastDragPos === null) return;
   let dx = dragPos[0] - lastDragPos[0];
   let dy = dragPos[1] - lastDragPos[1];
@@ -601,21 +609,24 @@ function applyDrag() {
   lastDragPos = dragPos;
 }
 
-function handleMouseMove(ev) {
-  if (mouseIsPressed)
+function handleMouseMove (ev) {
+  if (mouseIsPressed) {
     dragPos = getMousePosition(ev);
+  }
   if (autoHideToolbar) {
-    if (ev.clientY <= toolbarHeight)
+    if (ev.clientY <= toolbarHeight) {
       showToolbar();
-    else
+    } else {
       hideToolbar();
+    }
   }
 }
 
-function handleMouseLeave(ev) {
+function handleMouseLeave (ev) {
   mouseIsPressed = false;
-  if (autoHideToolbar)
+  if (autoHideToolbar) {
     hideToolbar();
+  }
 }
 
 canvas.addEventListener('mousedown', (e) => {
@@ -632,11 +643,11 @@ canvas.addEventListener('mouseup', (e) => {
 addThrottledEventHandler(canvas, 'mousemove', handleMouseMove, applyDrag, 50);
 document.body.addEventListener('mouseleave', handleMouseLeave);
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // Mouse wheel zoom handling
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
-function loadState() {
+function loadState () {
   let hash = location.hash.substr(1);
   let parts = hash.split(';');
   let cx = null, cy = null, area = null;
@@ -662,7 +673,7 @@ window.addEventListener('hashchange', (ev) => {
   invalidate();
 });
 
-function saveState() {
+function saveState () {
   let state = getZoom();
   let options = { x: state[0], y: state[1], a: state[2] };
   if (juliaMode) {
@@ -675,9 +686,9 @@ function saveState() {
 
 loadState();
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // Mouse wheel zoom handling
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
 let zoomDelta = 0;
 let zoomPosition = null;
@@ -687,13 +698,14 @@ let zoomPosition = null;
  * callback on every event, and the apply() handler eventually, but
  * with at least 'delay' milliseconds between each invokation.
  */
-function addThrottledEventHandler(elem, event, handle, apply, delay) {
+function addThrottledEventHandler (elem, event, handle, apply, delay) {
   let nextApply = performance.now();
   let timerId = null;
-  function invokeApply() { apply(); timerId = null; }
+  function invokeApply () { apply(); timerId = null; }
   elem.addEventListener(event, (ev) => {
-    if (handle !== null)
+    if (handle !== null) {
       handle(ev);
+    }
     let now = performance.now();
     if (now < nextApply) {
       if (timerId === null) {
@@ -707,46 +719,48 @@ function addThrottledEventHandler(elem, event, handle, apply, delay) {
   });
 }
 
-function applyZoom() {
-  if (zoomDelta !== 0)
+function applyZoom () {
+  if (zoomDelta !== 0) {
     zoom(zoomPosition, Math.pow(0.9, zoomDelta) - 1.0);
+  }
   zoomDelta = 0;
 }
 
-function handleWheelEvent(ev) {
-  if (ev.deltaY !== 0)
+function handleWheelEvent (ev) {
+  if (ev.deltaY !== 0) {
     zoomDelta += ev.deltaY / Math.abs(ev.deltaY);
+  }
   zoomPosition = getMousePosition(ev);
 }
 
 addThrottledEventHandler(canvas, 'wheel', handleWheelEvent, applyZoom, 50);
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // Notification
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
-function notify(message) {
-  let elem = document.createElement("div");
+function notify (message) {
+  let elem = document.createElement('div');
   elem.textContent = message;
-  elem.className = "notification";
+  elem.className = 'notification';
   elem.style.opacity = 0.0;
   document.body.appendChild(elem);
   elem.offsetWidth; // trigger reflow
-  elem.style.transitionTimingFunction = "ease-in";
-  elem.style.transition = "opacity 0.5s";
+  elem.style.transitionTimingFunction = 'ease-in';
+  elem.style.transition = 'opacity 0.5s';
   elem.style.opacity = 0.75;
-  setTimeout(function(){
-    elem.style.transition = "opacity 1.5s";
+  setTimeout(function () {
+    elem.style.transition = 'opacity 1.5s';
     elem.style.opacity = 0.0;
-    elem.addEventListener('transitionend', function(){
+    elem.addEventListener('transitionend', function () {
       document.body.removeChild(elem);
     });
   }, 1500);
 }
 
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 // Window resizing
-//////////////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////////////
 
 addThrottledEventHandler(window, 'resize', null, resize, 100);
 
@@ -754,33 +768,35 @@ canvas.focus();
 initializeWorkers();
 resize();
 
-function toggleFullscreen() {
+function toggleFullscreen () {
   if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
-    if (document.exitFullscreen)
+    if (document.exitFullscreen) {
       document.exitFullscreen();
-    if (document.mozCancelFullScreen)
+    }
+    if (document.mozCancelFullScreen) {
       document.mozCancelFullScreen();
-    else if (document.webkitCancelFullScreen)
-      document.webkitCancelFullScreen();
+    } else if (document.webkitCancelFullScreen) { document.webkitCancelFullScreen(); }
   } else {
-    if (document.body.requestFullscreen)
+    if (document.body.requestFullscreen) {
       document.body.requestFullscreen();
-    else if (document.body.webkitRequestFullScreen)
+    } else if (document.body.webkitRequestFullScreen) {
       document.body.webkitRequestFullScreen();
-    else if (document.body.mozRequestFullScreen)
+    } else if (document.body.mozRequestFullScreen) {
       document.body.mozRequestFullScreen();
+    }
   }
 }
 
-function toggleBenchmark() {
+function toggleBenchmark () {
   benchmarkMode = !benchmarkMode;
   benchmarkRecord = null;
   benchmarkSum = 0;
   benchmarkCount = 0;
-  let perfLog = document.getElementById("perf-log");
-  while (perfLog.firstChild)
+  let perfLog = document.getElementById('perf-log');
+  while (perfLog.firstChild) {
     perfLog.removeChild(perfLog.firstChild);
-  let perfWidget = document.getElementById("perf-widget");
+  }
+  let perfWidget = document.getElementById('perf-widget');
   perfWidget.style.display = benchmarkMode ? 'block' : 'none';
   resize();
   invalidate();
@@ -810,7 +826,7 @@ const keyHandlers = {
   '0': resetZoom
 };
 
-window.addEventListener('keypress', function(e){
+window.addEventListener('keypress', function (e) {
   if (e.ctrlKey || e.shiftKey || e.altKey || e.metaKey) return;
   let handler = keyHandlers[e.key];
   if (handler) {
@@ -821,8 +837,8 @@ window.addEventListener('keypress', function(e){
 
 let aboutVisible = false;
 
-function toggleAbout() {
-  let elem = document.getElementById("about");
+function toggleAbout () {
+  let elem = document.getElementById('about');
   if (aboutVisible) {
     elem.style.display = 'none';
     aboutVisible = false;
@@ -832,23 +848,20 @@ function toggleAbout() {
   }
 }
 
-document.getElementById("close-about-button").addEventListener('click', (e) => {
+document.getElementById('close-about-button').addEventListener('click', (e) => {
   e.preventDefault();
   toggleAbout();
 });
 
-function togglePerformance() {
+function togglePerformance () {
   showPerformance = !showPerformance;
-  if (showPerformance)
-    clearProgress();
-  else
-    progressCtx.clearRect(0,0,progressCanvas.width,progressCanvas.height);
+  if (showPerformance) { clearProgress(); } else { progressCtx.clearRect(0, 0, progressCanvas.width, progressCanvas.height); }
 }
 
-document.getElementById("julia-button").addEventListener('click', toggleJulia);
-document.getElementById("reset-button").addEventListener('click', resetZoom);
-document.getElementById("fullscreen-button").addEventListener('click', toggleFullscreen);
-document.getElementById("about-button").addEventListener('click', toggleAbout);
-document.getElementById("toolbar-button").addEventListener('click', toggleToolbar);
-document.getElementById("performance-button").addEventListener('click', togglePerformance);
-document.getElementById("perf-set-button").addEventListener('click', (e) => localStorage.benchmarkReference = (benchmarkCount > 0 ? benchmarkSum / benchmarkCount : null));
+document.getElementById('julia-button').addEventListener('click', toggleJulia);
+document.getElementById('reset-button').addEventListener('click', resetZoom);
+document.getElementById('fullscreen-button').addEventListener('click', toggleFullscreen);
+document.getElementById('about-button').addEventListener('click', toggleAbout);
+document.getElementById('toolbar-button').addEventListener('click', toggleToolbar);
+document.getElementById('performance-button').addEventListener('click', togglePerformance);
+document.getElementById('perf-set-button').addEventListener('click', (e) => localStorage.benchmarkReference = (benchmarkCount > 0 ? benchmarkSum / benchmarkCount : null));
