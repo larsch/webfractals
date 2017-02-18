@@ -1,3 +1,12 @@
+/*!
+ * Multi-core Mandelbrot Renderer
+ * Copyright(c) 2017 Lars Christensen
+ * MIT Licensed
+ */
+
+/* global onmessage:true postMessage */
+/* exported onmessage */
+
 let palette = null;
 let steps = 4096;
 let xmin = null;
@@ -7,7 +16,6 @@ let ymin = null;
 let yscale = null;
 let data = null;
 let generation = null;
-let id = null;
 let substep = null;
 let Cx, Cy;
 
@@ -64,13 +72,14 @@ function renderRowData (y) {
     let res = iterateFunction(cx, cy);
     let n = res[0];
     let p = x * 4;
-    if (n == steps) {
+    if (n === steps) {
       data[p + 0] = 0;
       data[p + 1] = 0;
       data[p + 2] = 0;
       data[p + 3] = 255;
     } else {
-      let zx2 = res[1], zy2 = res[2];
+      let zx2 = res[1];
+      let zy2 = res[2];
       let sum = n + fraction(zx2, zy2);
       n = Math.floor(sum);
       let f2 = sum - n;
@@ -90,8 +99,6 @@ function handlePalette (e) {
   onmessage = handleRow;
 }
 
-let rows = 0;
-
 function handleViewport (e) {
   let msg = e.data;
   if (msg === null) return;
@@ -108,7 +115,6 @@ function handleViewport (e) {
   iterateFunction = (Cx === undefined) ? mandelIter : juliaIter;
   data = new Uint8ClampedArray(w * 4);
   onmessage = handleRow;
-  rows = 0;
 }
 
 function handleRow (e) {
@@ -119,7 +125,6 @@ function handleRow (e) {
     let y = e.data;
     renderRowData(y);
     postMessage([y, data, generation, substep]);
-    rows += 1;
   }
 }
 
