@@ -119,7 +119,7 @@ try {
   };
 }
 
-function resize () {
+function resizeCanvas () {
   let newWidth = benchmarkMode ? 1024 : window.innerWidth;
   let newHeight = benchmarkMode ? 768 : window.innerHeight;
   if (w === newWidth && h === newHeight) {
@@ -767,11 +767,11 @@ function notify (message) {
 // Window resizing
 //
 
-addThrottledEventHandler(window, 'resize', null, resize, 100);
+addThrottledEventHandler(window, 'resize', null, resizeCanvas, 100);
 
 canvas.focus();
 initializeWorkers();
-resize();
+resizeCanvas();
 
 function toggleFullscreen () {
   if (document.fullscreenElement || document.mozFullScreenElement || document.webkitFullscreenElement) {
@@ -803,7 +803,7 @@ function toggleBenchmark () {
   }
   let perfWidget = document.getElementById('perf-widget');
   perfWidget.style.display = benchmarkMode ? 'block' : 'none';
-  resize();
+  resizeCanvas();
   invalidate();
 }
 
